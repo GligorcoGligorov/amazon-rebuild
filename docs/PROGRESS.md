@@ -35,7 +35,9 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
   **price and stock on the variant** (D7). Seeded from dummyjson: 6 categories,
   41 products, 394 variants, 63 of them deliberately out of stock. Variant
   taxonomy is per category — Size + Colour for clothing and footwear, Storage +
-  Colour for laptops and smartphones, never a size on a device. Home shows
+  Colour for laptops and smartphones, never a size on a device. Widened after
+  review to **13 categories, 84 products, 564 variants** covering all three
+  variant shapes — two dimensions, colour only, and none at all. Home shows
   photographic category tiles over a Top rated shelf; category pages show a
   product grid; product pages have a gallery, breadcrumb, three-state variant
   selector, stock and description. Mobile leads with title and price and pins a
@@ -60,9 +62,8 @@ Worth carrying into M3:
 - **`nullsNotDistinct` is on `unique()`, not `uniqueIndex()`.** Without it
   Postgres treats each NULL as distinct, so a no-options product could take two
   `(null, null)` variant rows.
-- **The catalog is thinner than planned:** dummyjson has only 5 products in most
-  categories (smartphones has 16), so 6 categories give 41 products, not ~50.
-  See D20 — worth knowing before M3 tunes search relevance against it.
+- **The catalog was widened before M3** from 41 products to 84, across 13
+  categories, so search has something to work against. See D20.
 - **Variant state is URL state** (D19), so filters in M3 can use exactly the
   same pattern and compose with it.
 
@@ -280,5 +281,4 @@ suggestions · pagination · OAuth and password reset.
 - ~~Product imagery~~ — resolved: dummyjson.com, see D14.
 - ~~Category tile images~~ — resolved in M2: each tile uses the first image of
   its first product.
-- M3 should confirm whether 41 products is enough to make search and filters
-  feel real, or whether to widen the category set (D20).
+- ~~Catalog size~~ — resolved: widened to 84 products across 13 categories.

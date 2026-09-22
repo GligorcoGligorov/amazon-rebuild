@@ -134,6 +134,51 @@ test.describe("catalog", () => {
     await expect(page).not.toHaveURL(before);
   });
 
+  test("products with no options add straight from the grid", async ({ page }) => {
+    // Phone Accessories are seeded with a single variant and no choices.
+    await page.goto("/category/mobile-accessories");
+
+    const card = page.getByRole("article").first();
+    await expect(card.getByRole("button", { name: "Add to cart" })).toBeVisible();
+    await expect(card.getByText("See options")).toHaveCount(0);
+
+    // The stretched card link must not swallow the button.
+    const button = card.getByRole("button", { name: "Add to cart" });
+    const box = await button.boundingBox();
+    const topMost = await page.evaluate(
+      ([x, y]) => document.elementFromPoint(x, y)?.tagName,
+      [box!.x + box!.width / 2, box!.y + box!.height / 2],
+    );
+    expect(topMost, "the add button must sit above the card link").toBe("BUTTON");
+  });
+
+  test("products with options say so instead of offering add", async ({ page }) => {
+    await page.goto("/category/mens-shirts");
+    const card = page.getByRole("article").first();
+    await expect(card.getByText("See options")).toBeVisible();
+    await expect(card.getByRole("button", { name: "Add to cart" })).toHaveCount(0);
+  });
+
+  test("a colour-only product shows one dimension, not two", async ({ page }) => {
+    await page.goto("/category/sunglasses");
+    await page.getByRole("article").first().getByRole("link").click();
+
+    const purchase = page.getByRole("region", { name: "Purchase options" });
+    await expect(purchase.getByText("Colour:")).toBeVisible();
+    await expect(purchase.getByText("Size:")).toHaveCount(0);
+    await expect(purchase.getByText("Storage:")).toHaveCount(0);
+    await expect(purchase.getByRole("group")).toHaveCount(1);
+  });
+
+  test("a product with no options shows no selector at all", async ({ page }) => {
+    await page.goto("/category/mobile-accessories");
+    await page.getByRole("article").first().getByRole("link").click();
+
+    const purchase = page.getByRole("region", { name: "Purchase options" });
+    await expect(purchase.getByRole("group")).toHaveCount(0);
+    await expect(purchase.getByText(/In stock|Only \d+ left/)).toBeVisible();
+  });
+
   test("an unknown product 404s rather than crashing", async ({ page }) => {
     const res = await page.goto("/product/no-such-product");
     expect(res?.status()).toBe(404);

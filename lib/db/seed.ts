@@ -24,9 +24,17 @@ type OptionPlan = {
   values2: string[];
 };
 
-// Variant shape per category. Clothing and footwear get size and colour;
-// devices get storage and colour, and never a size.
+/**
+ * Variant shape per category. Three kinds, and the schema and UI handle all of
+ * them: two dimensions (clothing, footwear, devices), one dimension (accessories
+ * that only vary by colour), and none at all — a product that is simply itself,
+ * which the grid offers to add to the cart directly rather than sending to the
+ * product page for options (D21).
+ *
+ * Devices never get a clothing size.
+ */
 const OPTIONS: Record<string, OptionPlan> = {
+  // Two dimensions — size and colour.
   "mens-shirts": {
     label1: "Size",
     values1: ["S", "M", "L", "XL"],
@@ -38,6 +46,12 @@ const OPTIONS: Record<string, OptionPlan> = {
     values1: ["XS", "S", "M", "L"],
     label2: "Colour",
     values2: ["Black", "Burgundy", "Ivory"],
+  },
+  tops: {
+    label1: "Size",
+    values1: ["XS", "S", "M", "L", "XL"],
+    label2: "Colour",
+    values2: ["Black", "White", "Rose"],
   },
   "mens-shoes": {
     label1: "Size",
@@ -51,6 +65,8 @@ const OPTIONS: Record<string, OptionPlan> = {
     label2: "Colour",
     values2: ["Black", "Tan"],
   },
+
+  // Two dimensions — storage and colour. Never a size.
   laptops: {
     label1: "Storage",
     values1: ["512GB", "1TB", "2TB"],
@@ -63,15 +79,57 @@ const OPTIONS: Record<string, OptionPlan> = {
     label2: "Colour",
     values2: ["Black", "Silver", "Blue"],
   },
+  tablets: {
+    label1: "Storage",
+    values1: ["128GB", "256GB", "512GB"],
+    label2: "Colour",
+    values2: ["Silver", "Graphite"],
+  },
+
+  // One dimension — colour only.
+  sunglasses: {
+    label1: "Colour",
+    values1: ["Black", "Tortoise", "Gold"],
+    label2: null,
+    values2: [],
+  },
+  "mens-watches": {
+    label1: "Colour",
+    values1: ["Silver", "Gold", "Black"],
+    label2: null,
+    values2: [],
+  },
+  "womens-watches": {
+    label1: "Colour",
+    values1: ["Silver", "Rose Gold", "Black"],
+    label2: null,
+    values2: [],
+  },
+  "womens-bags": {
+    label1: "Colour",
+    values1: ["Black", "Tan", "Red"],
+    label2: null,
+    values2: [],
+  },
+
+  // No options at all — one sellable unit, added straight from the grid.
+  "mobile-accessories": { label1: null, values1: [], label2: null, values2: [] },
 };
 
 const CATEGORY_NAMES: Record<string, { name: string; position: number }> = {
   "mens-shirts": { name: "Men's Shirts", position: 10 },
+  tops: { name: "Tops", position: 15 },
   "womens-dresses": { name: "Women's Dresses", position: 20 },
   "mens-shoes": { name: "Men's Shoes", position: 30 },
   "womens-shoes": { name: "Women's Shoes", position: 40 },
-  laptops: { name: "Laptops", position: 50 },
-  smartphones: { name: "Smartphones", position: 60 },
+  "womens-bags": { name: "Women's Bags", position: 45 },
+  sunglasses: { name: "Sunglasses", position: 48 },
+  "mens-watches": { name: "Men's Watches", position: 52 },
+  "womens-watches": { name: "Women's Watches", position: 54 },
+  laptops: { name: "Laptops", position: 60 },
+  tablets: { name: "Tablets", position: 65 },
+  smartphones: { name: "Smartphones", position: 70 },
+  "mobile-accessories": { name: "Phone Accessories", position: 80 },
 };
 
 const SLUGS = Object.keys(CATEGORY_NAMES);
@@ -114,8 +172,27 @@ function hashUnit(seed: string): number {
  */
 function priceForVariant(basePence: number, option1: string | null): number {
   if (!option1) return basePence;
-  const tier = { "256GB": 1.08, "512GB": 1.18, "1TB": 1.3, "2TB": 1.55 }[option1];
+  const tiers: Record<string, number> = {
+    "128GB": 1,
+    "256GB": 1.08,
+    "512GB": 1.18,
+    "1TB": 1.3,
+    "2TB": 1.55,
+  };
+  const tier = tiers[option1];
   return tier ? Math.round(basePence * tier) : basePence;
+}
+
+/**
+ * Every option combination for a plan, as [value1, value2] pairs. Handles all
+ * three shapes: two dimensions, one, or none at all (a single [null, null]).
+ */
+function combinations(plan: OptionPlan): [string | null, string | null][] {
+  if (!plan.label1) return [[null, null]];
+  if (!plan.label2) return plan.values1.map((v1) => [v1, null]);
+  return plan.values1.flatMap(
+    (v1) => plan.values2.map((v2) => [v1, v2] as [string, string]),
+  );
 }
 
 async function main() {
@@ -203,27 +280,33 @@ async function main() {
       const rows: (typeof variants.$inferInsert)[] = [];
       let position = 0;
 
-      for (const v1 of plan.values1) {
-        for (const v2 of plan.values2) {
-          const priceCents = priceForVariant(baseCents, v1);
-          // Deterministic per-combination stock, so some variants are genuinely
-          // out of stock and the selector's third state has something to show.
-          const roll = hashUnit(`${productSlug}|${v1}|${v2}`);
-          const stock = roll < 0.18 ? 0 : Math.max(1, Math.round(roll * api.stock));
+      for (const [v1, v2] of combinations(plan)) {
+        const priceCents = priceForVariant(baseCents, v1);
+        // Deterministic per-combination stock, so some variants are genuinely
+        // out of stock and the selector's third state has something to show.
+        // A product with no options is never seeded out of stock — there would
+        // be no other combination to switch to.
+        const roll = hashUnit(`${productSlug}|${v1 ?? ""}|${v2 ?? ""}`);
+        const stock =
+          plan.label1 === null
+            ? Math.max(1, api.stock)
+            : roll < 0.18
+              ? 0
+              : Math.max(1, Math.round(roll * api.stock));
 
-          rows.push({
-            productId: product.id,
-            sku: `${productSlug}-${slugify(v1)}-${slugify(v2)}`.toUpperCase(),
-            option1Value: v1,
-            option2Value: v2,
-            priceCents,
-            compareAtCents: discounted
-              ? Math.round(priceCents / (1 - api.discountPercentage / 100))
-              : null,
-            stock,
-            position: position++,
-          });
-        }
+        const skuParts = [productSlug, v1, v2].filter(Boolean).map((x) => slugify(x!));
+        rows.push({
+          productId: product.id,
+          sku: skuParts.join("-").toUpperCase(),
+          option1Value: v1,
+          option2Value: v2,
+          priceCents,
+          compareAtCents: discounted
+            ? Math.round(priceCents / (1 - api.discountPercentage / 100))
+            : null,
+          stock,
+          position: position++,
+        });
       }
 
       await db

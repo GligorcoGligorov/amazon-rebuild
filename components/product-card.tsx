@@ -30,7 +30,8 @@ export function ProductCard({ product }: { product: Card }) {
 
         <h3 className="text-sm font-medium leading-snug">
           {/* Stretched link: the whole card is the target, but only the title
-              text is in the accessibility tree as the link name. */}
+              text is in the accessibility tree as the link name. Controls that
+              sit above it need `relative z-10` to stay clickable. */}
           <Link href={`/product/${product.slug}`} className="after:absolute after:inset-0">
             {product.title}
           </Link>
@@ -56,17 +57,34 @@ export function ProductCard({ product }: { product: Card }) {
             ) : null}
           </p>
 
-          {/* Amazon shows "See options" rather than an add button for products
-              with variants. Ours does the same — it falls out of the schema. */}
-          <p className="mt-1 text-xs text-ink-600">
-            {!product.inStock
-              ? "Out of stock"
-              : product.hasOptions
-                ? "See options"
-                : "In stock"}
-          </p>
+          <div className="mt-2">
+            {!product.inStock ? (
+              <p className="text-xs text-ink-600">Out of stock</p>
+            ) : product.hasOptions ? (
+              // Amazon shows "See options" rather than an add button when a
+              // product has choices to make. Ours does the same — it falls out
+              // of the schema, since there is no single variant to add.
+              <p className="text-xs text-ink-600">See options</p>
+            ) : (
+              // Nothing to choose, so the cart is one click away from the grid.
+              <AddToCartButton />
+            )}
+          </div>
         </div>
       </div>
     </article>
+  );
+}
+
+/** Inert until M4 wires the cart, like the buttons on the product page. */
+function AddToCartButton() {
+  return (
+    <button
+      type="button"
+      disabled
+      className="relative z-10 w-full rounded-md bg-accent px-3 py-2 text-xs font-semibold text-accent-ink disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      Add to cart
+    </button>
   );
 }

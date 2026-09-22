@@ -420,24 +420,52 @@ the edge. `scroll={false}` keeps the viewport still.
 
 ---
 
-## D20 — The catalog is 41 products across 6 categories
+## D20 — The catalog is 84 products across 13 categories
 
-**What:** The six planned categories yield 41 products and 394 variants, not the
-~50 products the plan assumed. dummyjson has only 5 products in most categories;
-smartphones is the outlier with 16.
+**What:** Shipped at 41 products across 6 categories, then widened before M3 to
+84 products and 564 variants across 13, so search and filters have something to
+work against. The added categories carry lighter variant shapes: colour only for
+sunglasses, bags and both watch categories, and no options at all for phone
+accessories.
 
-**Why:** The six categories were chosen to match the variant taxonomy — clothing
-and footwear take Size + Colour, laptops and smartphones take Storage + Colour.
-Swapping in denser categories (kitchen-accessories has 30, groceries 27) would
-give a fuller grid but nothing sensible to vary, which would undercut the part
-of the product page most worth showing.
+**Why:** The original six matched the two-dimension variant taxonomy, but 41
+products is too thin for search to feel real. The widened set keeps every
+category's options honest rather than padding: categories only get a dimension
+where one genuinely applies. `mobile-accessories` was added beyond the requested
+six to reach the ~80 target, and carries no options at all.
+
+Categories still excluded on purpose: kitchen-accessories (30 products) and
+groceries (27) would pad the grid fastest but have nothing sensible to vary.
 
 **Alternatives:** Adding dense categories for volume (fuller grids, meaningless
 variants); duplicating products to pad the catalog (dishonest, and D10 rules out
 duplicate listings).
 
-**Trade-offs:** Category pages show 5 items and look sparse next to a real store.
-Variants carry the depth instead — 394 sellable units across 41 products.
+**Trade-offs:** Several categories still show only 5 items. Depth sits in the
+variants — 564 sellable units across 84 products.
 
 **With more time:** Author a small set of products by hand for the thin
 categories, with real variant data rather than synthesised.
+
+---
+
+## D21 — Products with no options add straight from the grid
+
+**What:** A product whose variants offer no choice shows a real "Add to cart"
+button on its grid card. Products with options show "See options" and send the
+shopper to the product page, as before.
+
+**Why:** "See options" on something with no options to see is a lie and an extra
+click. The distinction falls out of the schema — a product either declares option
+labels or it does not — so the card can be honest for free.
+
+**Alternatives:** "See options" everywhere (uniform, but wrong for a third of
+the catalog); a quick-add on every card including variant products (needs a
+variant picker in the grid, which is M4 scope at best).
+
+**Trade-offs:** The card now has an interactive control under a stretched card
+link, so the button needs `relative z-10` to stay clickable. There is an e2e
+assertion on `elementFromPoint` for exactly this.
+
+**With more time:** A compact variant picker in the card for single-dimension
+products, so colour-only items can also add from the grid.
