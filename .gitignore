@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 
 # .agent-logs/ is deliberately NOT ignored. It is part of the submission.
+.env*
