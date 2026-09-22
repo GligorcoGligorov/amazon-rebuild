@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { SearchBox, SearchForm } from "./search-box";
 
 /**
- * The search box is a plain GET form to /search — no client state, no
- * JavaScript needed. Typing and pressing Enter produces a shareable URL, which
- * is the same contract the filters and the variant selector use (D19).
+ * The search box is a plain GET form to /search: typing and pressing Enter
+ * produces a shareable URL, the same contract the filters and the variant
+ * selector use (D19). It is a Client Component only so it can show the query
+ * that produced the current page.
  *
  * The cart badge is still a shell until M4.
  */
@@ -19,29 +22,12 @@ export function SiteHeader() {
         </Link>
 
         {/* Order matters: on mobile this wraps to its own full-width row. */}
-        <form
-          action="/search"
-          method="get"
-          role="search"
-          className="order-last flex w-full gap-2 sm:order-none sm:w-auto sm:flex-1"
-        >
-          <label htmlFor="site-search" className="sr-only">
-            Search products
-          </label>
-          <input
-            id="site-search"
-            name="q"
-            type="search"
-            placeholder="Search products"
-            className="min-w-0 flex-1 rounded-md border border-transparent bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400"
-          />
-          <button
-            type="submit"
-            className="shrink-0 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
-          >
-            Search
-          </button>
-        </form>
+        {/* The fallback is the same working form with an empty value, so
+            search functions before hydration and without JavaScript — it just
+            does not prefill until the client knows the query. */}
+        <Suspense fallback={<SearchForm />}>
+          <SearchBox />
+        </Suspense>
 
         <Link
           href="/cart"

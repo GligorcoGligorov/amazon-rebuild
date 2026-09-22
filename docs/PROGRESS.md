@@ -49,7 +49,10 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
   and ignore the category filter, so the sidebar shows what else the same search
   would return. Applied filters are removable chips with a clear-all. Five sorts.
   Two empty states, both with a way out. No ad slots and no duplicate rows, by
-  construction. 57 e2e tests pass locally **and against the deployed URL**.
+  construction. Refined after review: the search box keeps its query so it can be
+  edited, matching handles simple plurals plus brand and category name, and a
+  category filter with no query is named in the heading. 65 e2e tests pass
+  locally **and against the deployed URL**, including a no-JavaScript pass.
 
 ## In progress
 
@@ -72,6 +75,11 @@ Worth carrying into M4:
   array juggling.
 - **`goBack()` can resolve before the URL settles.** Use
   `await expect(page).toHaveURL(...)`, not `expect(page.url()).toBe(...)`.
+- **`useSearchParams` forces a Suspense boundary**, and whatever the fallback
+  renders is what exists before hydration and without JavaScript. A fallback
+  that omitted the input silently broke both. The fallback is now the same
+  working form with an empty value, and `e2e/search.spec.ts` has a
+  `javaScriptEnabled: false` pass so it cannot regress quietly.
 
 ## What M2 learned
 

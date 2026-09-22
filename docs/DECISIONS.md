@@ -479,6 +479,13 @@ products, so colour-only items can also add from the grid.
 user-chosen; "Relevance" with a query falls back to rating, and without one to
 alphabetical.
 
+**Refined after review:** a query is split on whitespace; every word must match
+(AND across words, OR across fields and forms), so "apple watch" narrows rather
+than widens. Each word also tries a few singular forms — `-ies→-y`, `-es`, `-s` —
+because substring matching already covers singular→plural ("watch" is inside
+"Watches") but not the reverse. Matching extends to the **category name**, so
+"laptops" returns the Laptops category even though no product is titled that.
+
 **Why:** Across 84 products, substring matching finds what a shopper types and is
 one query with no index maintenance or migration. Postgres full-text would add a
 generated column, a GIN index and a ranking function to solve a problem this
@@ -489,9 +496,10 @@ catalog does not have. Honest naming matters too — the sort is called
 at 84); a search service such as Typesense (another dependency and another
 account for a 24h demo).
 
-**Trade-offs:** No typo tolerance, no stemming — "watches" does not match
-"watch". Substring matching also means a query can match mid-word. Both are
-acceptable at this size and would not be past a few thousand products.
+**Trade-offs:** No typo tolerance and no real stemming — the three suffix rules
+are not a Porter stemmer and will miss irregular plurals. Substring matching also
+means a query can match mid-word. Both are acceptable at this size and would not
+be past a few thousand products.
 
 **With more time:** A `tsvector` column with a trigram index for fuzzy matching,
 and the type-ahead suggestions currently on the cut list.

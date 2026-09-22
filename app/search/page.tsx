@@ -47,13 +47,15 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+      {/* With a query the heading is the query; with only a category filter it
+          is the category. "All products" is for the unfiltered page alone. */}
       <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-        {q ? <>Results for “{q}”</> : "All products"}
+        {q ? <>Results for “{q}”</> : (categoryName ?? "All products")}
       </h1>
 
       <p aria-live="polite" className="mt-1 text-sm text-ink-600">
         {results.total} {results.total === 1 ? "product" : "products"}
-        {categoryName ? <> in {categoryName}</> : null}
+        {q && categoryName ? <> in {categoryName}</> : null}
       </p>
 
       <div className="mt-4 flex flex-col gap-4">

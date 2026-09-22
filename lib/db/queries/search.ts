@@ -45,16 +45,45 @@ const cardColumns = {
   totalStock: sql<number>`sum(${variants.stock})::int`,
 };
 
-/** Matches title, brand and description. No ranking cleverness — just honest. */
+/**
+ * Singular forms to also try for a term. Substring matching already handles
+ * singular → plural ("watch" is inside "Watches"), so only the other direction
+ * needs help. Three rules cover the catalog; this is deliberately not a stemmer.
+ */
+function singularForms(term: string): string[] {
+  const forms = new Set([term]);
+  if (/ies$/i.test(term) && term.length > 4) forms.add(term.slice(0, -3) + "y");
+  if (/es$/i.test(term) && term.length > 3) forms.add(term.slice(0, -2));
+  if (/s$/i.test(term) && !/ss$/i.test(term) && term.length > 2) {
+    forms.add(term.slice(0, -1));
+  }
+  return [...forms];
+}
+
+/**
+ * Matches title, description, brand and category name, so "apple" finds Apple
+ * products and "laptops" finds the Laptops category. Every word in the query
+ * must match somewhere (AND across words, OR across fields and forms) — so
+ * "apple watch" narrows rather than widens.
+ */
 function textFilter(q: string | undefined): SQL | undefined {
-  const term = q?.trim();
-  if (!term) return undefined;
-  const like = `%${term}%`;
-  return or(
-    ilike(products.title, like),
-    ilike(products.description, like),
-    ilike(products.brand, like),
-  );
+  const words = q?.trim().split(/\s+/).filter(Boolean) ?? [];
+  if (words.length === 0) return undefined;
+
+  const perWord = words.map((word) => {
+    const clauses = singularForms(word).flatMap((form) => {
+      const like = `%${form}%`;
+      return [
+        ilike(products.title, like),
+        ilike(products.description, like),
+        ilike(products.brand, like),
+        ilike(categories.name, like),
+      ];
+    });
+    return or(...clauses);
+  });
+
+  return and(...perWord);
 }
 
 function orderFor(sort: SortKey | undefined, hasQuery: boolean) {
