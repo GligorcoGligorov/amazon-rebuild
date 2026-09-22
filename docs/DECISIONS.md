@@ -531,3 +531,73 @@ putting the active chip first and letting the next one peek.
 
 **With more time:** The full-screen sheet with a live "Show N results" count,
 once there are enough filter dimensions to justify it.
+
+---
+
+## D24 — The cart is a database row keyed by a session cookie
+
+**What:** An `httpOnly` `cart_session` cookie holds a random token; `carts` is
+keyed by it and `cart_items` references a **variant**, one row per variant per
+cart. Mutations are Server Actions that set the cookie on first write; reads
+never create a cart.
+
+**Why:** A guest cart must survive reloads and outlive a tab (D13), and M5 has
+to merge it into a user's cart on sign-in — both are far easier against a row
+than against `localStorage`, which the server cannot see. `httpOnly` keeps it
+out of reach of page scripts. Reads staying side-effect-free means a crawler
+hitting every product page does not fill the database with empty carts.
+
+**Alternatives:** `localStorage` (invisible to Server Components, so the header
+badge and cart page could not render on the server); a signed cookie holding the
+whole cart (no join to live prices or stock, and it grows unbounded).
+
+**Trade-offs:** Every add writes a row, and abandoned guest carts accumulate with
+nothing to clean them up.
+
+**With more time:** A scheduled job deleting guest carts untouched for 30 days.
+
+---
+
+## D25 — Cart mutations clamp to stock rather than failing
+
+**What:** Adding 3 of something with 2 left puts 2 in the cart. The increment is
+`least(quantity + n, stock)` inside the upsert, so two tabs cannot race past
+stock. Quantity changes are scoped to the session's own cart, so an item id from
+elsewhere cannot be edited by guessing it.
+
+**Why:** Rejecting the whole action for being one over is worse than doing what
+was possible and saying so. Doing the clamp in SQL rather than read-then-write
+removes the race without a transaction.
+
+**Alternatives:** Reject over-stock adds (more code, worse outcome); clamp in
+application code after a read (racy between concurrent requests).
+
+**Trade-offs:** A shopper can ask for 3 and get 2 without an explicit error — the
+stepper's disabled "+" and the "Only N in stock" line carry that instead.
+
+**With more time:** Re-validate stock at checkout, since a cart can sit for days.
+
+---
+
+## D26 — Restoring focus waits for the transition, not a timer
+
+**What:** When the add-to-cart drawer closes, focus returns to the button that
+opened it — in an effect gated on `!pending`, not synchronously and not after a
+`requestAnimationFrame`.
+
+**Why:** Three versions of this were wrong, and each failed in a different way.
+Storing the trigger element does not survive `router.refresh()`: React replaces
+the node and focusing a detached one silently does nothing. Focusing
+synchronously in the close handler happens before the re-render that removes the
+drawer. A single `requestAnimationFrame` passed locally and failed under parallel
+test load, because the refresh had not landed yet. Gating on the transition's own
+`pending` flag is the only version that is actually deterministic.
+
+**Alternatives:** A fixed `setTimeout` (hides the race on a fast machine);
+skipping focus restoration (fails the keyboard criterion in D16).
+
+**Trade-offs:** Focus returns a beat after the drawer closes, once the refresh
+settles. Imperceptible, and correct.
+
+**With more time:** `inert` on the background while the drawer is open, so the
+trap is enforced by the platform rather than a Tab handler.

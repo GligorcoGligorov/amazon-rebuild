@@ -15,6 +15,13 @@
       "when": 1790106845957,
       "tag": "0001_remarkable_ma_gnuci",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790111021334,
+      "tag": "0002_tearful_joystick",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,8 @@ export type ProductCard = {
   /** True when the product has choices to make, so the card links instead of adding. */
   hasOptions: boolean;
   inStock: boolean;
+  /** The single variant id, when there is exactly one — lets the card add directly (D21). */
+  soleVariantId: string | null;
 };
 
 const cardColumns = {
@@ -33,6 +35,7 @@ const cardColumns = {
   compareAtCents: sql<number | null>`max(${variants.compareAtCents})::int`,
   variantCount: sql<number>`count(${variants.id})::int`,
   totalStock: sql<number>`sum(${variants.stock})::int`,
+  soleVariantId: sql<string | null>`case when count(${variants.id}) = 1 then min(${variants.id}::text) end`,
 };
 
 type CardRow = {
@@ -48,6 +51,7 @@ type CardRow = {
   compareAtCents: number | null;
   variantCount: number;
   totalStock: number;
+  soleVariantId: string | null;
 };
 
 function toCard(row: CardRow): ProductCard {
@@ -63,6 +67,7 @@ function toCard(row: CardRow): ProductCard {
     compareAtCents: row.compareAtCents,
     hasOptions: Boolean(row.option1Label) && row.variantCount > 1,
     inStock: row.totalStock > 0,
+    soleVariantId: row.soleVariantId,
   };
 }
 

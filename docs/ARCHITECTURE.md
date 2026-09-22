@@ -3,14 +3,14 @@
 Filled in as we build. Sections marked _(planned)_ are intent, not fact — when
 a milestone lands, replace the plan with what was actually built.
 
-**Last updated:** 2026-09-22 (M3 shipped — search, filter, sort)
+**Last updated:** 2026-09-22 (M4 shipped — cart and add-to-cart drawer)
 
 ---
 
 ## Data model
 
-**Built:** `categories`, `products`, `variants` — see `lib/db/schema.ts` and
-the migrations in `drizzle/`. `users`, `carts`, `cart_items`, `addresses`,
+**Built:** `categories`, `products`, `variants`, `carts`, `cart_items` — see
+`lib/db/schema.ts` and the migrations in `drizzle/`. `users`, `addresses`,
 `orders` and `order_items` are still _(planned)_.
 
 Variant options are generic and positional: a product declares up to two
@@ -116,7 +116,20 @@ Every control is a `<Link>` built by `hrefFor`, which preserves the other two
 params — filters and sort compose, and back, reload and sharing all work.
 
 ### Add to cart
-To be filled in at M4.
+
+`lib/actions/cart.ts` holds the Server Actions. `addToCart` upserts a
+`cart_items` row keyed by `(cart_id, variant_id)`, incrementing with
+`least(quantity + n, stock)` so two tabs cannot race past stock (D25). The
+session token is an `httpOnly` cookie, written on first mutation only — reads
+never create a cart (D24).
+
+`components/add-to-cart.tsx` is the one substantial Client Component: it posts
+the same Server Action, intercepts the submit to open the drawer, and calls
+`router.refresh()` so the header badge and cart page re-render. With JavaScript
+off the form posts normally and the page re-renders with the item added.
+
+The cart page and the quantity stepper are Server Components driving Server
+Actions through plain forms, so they need no client JavaScript at all.
 
 ### Sign up / sign in, and guest cart merge
 To be filled in at M5.

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { SearchBox, SearchForm } from "./search-box";
+import { readSessionToken } from "@/lib/actions/cart";
+import { getCartCount } from "@/lib/db/queries/cart";
 
 /**
  * The search box is a plain GET form to /search: typing and pressing Enter
@@ -8,9 +10,11 @@ import { SearchBox, SearchForm } from "./search-box";
  * selector use (D19). It is a Client Component only so it can show the query
  * that produced the current page.
  *
- * The cart badge is still a shell until M4.
+ * The cart badge reads the live count for this session.
  */
-export function SiteHeader() {
+export async function SiteHeader() {
+  const count = await getCartCount(await readSessionToken());
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-ink-900 text-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3">
@@ -38,9 +42,11 @@ export function SiteHeader() {
             aria-hidden="true"
             className="inline-flex min-w-6 justify-center rounded-full bg-accent px-1.5 py-0.5 text-xs font-bold text-accent-ink"
           >
-            0
+            {count}
           </span>
-          <span className="sr-only">0 items in cart</span>
+          <span className="sr-only">
+            {count} {count === 1 ? "item" : "items"} in cart
+          </span>
         </Link>
       </div>
     </header>

@@ -43,6 +43,7 @@ const cardColumns = {
   compareAtCents: sql<number | null>`max(${variants.compareAtCents})::int`,
   variantCount: sql<number>`count(${variants.id})::int`,
   totalStock: sql<number>`sum(${variants.stock})::int`,
+  soleVariantId: sql<string | null>`case when count(${variants.id}) = 1 then min(${variants.id}::text) end`,
 };
 
 /**
@@ -148,6 +149,7 @@ export async function searchProducts(
     compareAtCents: row.compareAtCents,
     hasOptions: Boolean(row.option1Label) && row.variantCount > 1,
     inStock: row.totalStock > 0,
+    soleVariantId: row.soleVariantId,
   }));
 
   return { items, total: items.length, facets: facetRows };

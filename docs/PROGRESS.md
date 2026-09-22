@@ -9,7 +9,7 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
 
 ## Current milestone
 
-**M3 — Search + filter + sort.** Done and deployed. M4 is next.
+**M4 — Cart.** Done and deployed. M5 is next.
 
 **Live URL: https://8x-store.vercel.app** — keep this working at all times (D15).
 
@@ -54,17 +54,40 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
   category filter with no query is named in the heading. 65 e2e tests pass
   locally **and against the deployed URL**, including a no-JavaScript pass.
 
+- **M4 — Cart.** Guest cart in Postgres keyed by an `httpOnly` session cookie
+  (D24). Add to cart opens a **drawer** and never leaves the page (D8), naming
+  the exact variant and offering View cart, Checkout and Keep shopping at every
+  width. Cart page puts subtotal and checkout above the line items on mobile,
+  beside them on desktop. Quantity stepper whose minus becomes a trash icon at 1.
+  Header badge is live. Everything works without JavaScript — the drawer is the
+  enhancement, not the mechanism. `/checkout` ships a stub so the drawer links
+  somewhere real. 92 e2e tests pass locally **and against the deployed URL**.
+
 ## In progress
 
-Nothing. M3 is closed. M4 is next.
+Nothing. M4 is closed. M5 is next.
 
 ## Known bugs
 
 None open. Two were found and fixed during M2 — see "What M2 learned".
 
-## What M3 learned
+## What M4 learned
 
-Worth carrying into M4:
+Worth carrying into M5:
+
+- **Focus restoration races `router.refresh()`.** Three wrong versions before
+  one that works — see D26. Any future dialog should gate focus moves on the
+  transition's `pending` flag, not a frame or a timer.
+- **`sr-only` text is in `innerText`.** Reading a selected chip gave
+  `"S — selected"`. Read the value from its legend instead.
+- **Two tests passed in isolation and failed under four-worker load.** Both were
+  genuine timing exposure, not flakiness to retry away: one was the focus race
+  above, the other a hydration-dependent assertion that now says so and waits
+  longer.
+- **Server Actions as `<form action>` keep the no-JS path free.** The cart's
+  stepper and remove controls are plain forms; only the drawer needs the client.
+
+## What M3 learned
 
 - **Chromium does not render a closed `<details>`'s children at all.** CSS
   cannot force one open at a breakpoint, so a disclosure that should be open on

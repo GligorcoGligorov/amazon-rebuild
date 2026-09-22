@@ -5,6 +5,7 @@ import { getProductBySlug } from "@/lib/db/queries/catalog";
 import { ProductGallery } from "@/components/product-gallery";
 import { VariantSelector, buildOptionStates } from "@/components/variant-selector";
 import { StickyBuyBar } from "@/components/sticky-buy-bar";
+import { AddToCartButton } from "@/components/add-to-cart";
 import { formatPrice, formatRating, optionParam } from "@/lib/format";
 import type { Variant } from "@/lib/db/schema";
 
@@ -169,7 +170,11 @@ export default async function ProductPage({ params, searchParams }: Props) {
 
           {/* Desktop buy button. Mobile gets the sticky bar instead. */}
           <div className="hidden lg:block">
-            <AddToCartButton inStock={inStock} />
+            <AddToCartButton
+              variantId={selected.id}
+              priceCents={selected.priceCents}
+              inStock={inStock}
+            />
           </div>
 
           <div className="border-t border-border pt-6">
@@ -182,25 +187,10 @@ export default async function ProductPage({ params, searchParams }: Props) {
       </div>
 
       <StickyBuyBar
+        variantId={selected.id}
         priceCents={selected.priceCents}
         inStock={inStock}
-        title={product.title}
       />
-    </div>
-  );
-}
-
-function AddToCartButton({ inStock }: { inStock: boolean }) {
-  return (
-    <div>
-      <button
-        type="button"
-        disabled
-        className="w-full rounded-md bg-accent px-6 py-3 text-sm font-semibold text-accent-ink disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {inStock ? "Add to cart" : "Out of stock"}
-      </button>
-      <p className="mt-2 text-xs text-ink-400">Cart opens in the next update.</p>
     </div>
   );
 }

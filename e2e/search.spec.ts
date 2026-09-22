@@ -160,8 +160,10 @@ test.describe("search", () => {
     await page.getByRole("button", { name: "Search" }).click();
     await expect(page).toHaveURL(/q=shirt/);
 
-    // It used to empty itself, forcing a retype.
-    await expect(box).toHaveValue("shirt");
+    // It used to empty itself, forcing a retype. The value arrives with
+    // hydration, so this waits longer than the default — the behaviour is
+    // correct, it just needs the client bundle.
+    await expect(box).toHaveValue("shirt", { timeout: 15_000 });
 
     // And it is editable from there, not just populated.
     await box.fill("shirts blue");

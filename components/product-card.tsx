@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ProductCard as Card } from "@/lib/db/queries/catalog";
 import { formatPrice, formatRating } from "@/lib/format";
+import { AddToCartButton } from "./add-to-cart";
 
 export function ProductCard({ product }: { product: Card }) {
   const rating = formatRating(product.rating);
@@ -65,26 +66,21 @@ export function ProductCard({ product }: { product: Card }) {
               // product has choices to make. Ours does the same — it falls out
               // of the schema, since there is no single variant to add.
               <p className="text-xs text-ink-600">See options</p>
-            ) : (
+            ) : product.soleVariantId ? (
               // Nothing to choose, so the cart is one click away from the grid.
-              <AddToCartButton />
-            )}
+              // `relative z-10` keeps it above the stretched card link.
+              <div className="relative z-10">
+                <AddToCartButton
+                  variantId={product.soleVariantId}
+                  priceCents={product.minPriceCents}
+                  inStock={product.inStock}
+                  className="!px-3 !py-2 !text-xs"
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
     </article>
-  );
-}
-
-/** Inert until M4 wires the cart, like the buttons on the product page. */
-function AddToCartButton() {
-  return (
-    <button
-      type="button"
-      disabled
-      className="relative z-10 w-full rounded-md bg-accent px-3 py-2 text-xs font-semibold text-accent-ink disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      Add to cart
-    </button>
   );
 }

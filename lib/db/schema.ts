@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-// Carts, orders and users arrive with the milestones that need them —
+// Users, addresses and orders arrive with the milestones that need them —
 // see docs/ARCHITECTURE.md for the full plan.
 
 export const categories = pgTable(
@@ -86,6 +86,58 @@ export const variants = pgTable(
   ],
 );
 
+/**
+ * One open cart per browser session. `sessionToken` is a cookie value, so a
+ * guest can fill a cart before signing in (D13). M5 adds `userId` and merges
+ * the guest cart into the user's on sign-in.
+ */
+export const carts = pgTable(
+  "carts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionToken: text("session_token").notNull().unique(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("carts_session_idx").on(t.sessionToken)],
+);
+
+/**
+ * Line items reference a variant, never a product — the variant is the
+ * sellable unit (D7). One row per variant per cart, so adding the same variant
+ * twice increments rather than duplicating.
+ */
+export const cartItems = pgTable(
+  "cart_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    cartId: uuid("cart_id")
+      .notNull()
+      .references(() => carts.id, { onDelete: "cascade" }),
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => variants.id, { onDelete: "cascade" }),
+    quantity: integer("quantity").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("cart_items_cart_idx").on(t.cartId),
+    unique("cart_items_cart_variant_key").on(t.cartId, t.variantId),
+  ],
+);
+
+export const cartsRelations = relations(carts, ({ many }) => ({
+  items: many(cartItems),
+}));
+
+export const cartItemsRelations = relations(cartItems, ({ one }) => ({
+  cart: one(carts, { fields: [cartItems.cartId], references: [carts.id] }),
+  variant: one(variants, {
+    fields: [cartItems.variantId],
+    references: [variants.id],
+  }),
+}));
+
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
 }));
@@ -108,3 +160,5 @@ export const variantsRelations = relations(variants, ({ one }) => ({
 export type Category = typeof categories.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type Variant = typeof variants.$inferSelect;
+export type Cart = typeof carts.$inferSelect;
+export type CartItem = typeof cartItems.$inferSelect;
