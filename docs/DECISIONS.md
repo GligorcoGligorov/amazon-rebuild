@@ -393,3 +393,51 @@ a specific colour value.
 
 **With more time:** An axe accessibility pass in the same suite, so contrast
 regressions fail the build everywhere rather than on one element.
+
+---
+
+## D19 — Variant selection lives in the URL, not client state
+
+**What:** Choosing a size or colour navigates to
+`/product/[slug]?size=M&colour=Black`. The product page stays a Server
+Component; the selector is a list of links, not a client-side control.
+
+**Why:** A chosen variant is shareable and survives reload and the back button,
+which is M2's exit criterion. It keeps the page server-rendered per D2, and the
+selector is keyboard-operable for free because links already are. Option labels
+become param names (`Size` → `size`), so URLs read like the product rather than
+like the schema.
+
+**Alternatives:** Client state with `useState` (faster feel, but the URL stops
+describing the page and back breaks); a form POST (a mutation where none is
+needed).
+
+**Trade-offs:** Each change is a server round trip, so switching variants is a
+navigation rather than instant. Acceptable — the pages are small and cached at
+the edge. `scroll={false}` keeps the viewport still.
+
+**With more time:** Prefetch adjacent variants so the round trip disappears.
+
+---
+
+## D20 — The catalog is 41 products across 6 categories
+
+**What:** The six planned categories yield 41 products and 394 variants, not the
+~50 products the plan assumed. dummyjson has only 5 products in most categories;
+smartphones is the outlier with 16.
+
+**Why:** The six categories were chosen to match the variant taxonomy — clothing
+and footwear take Size + Colour, laptops and smartphones take Storage + Colour.
+Swapping in denser categories (kitchen-accessories has 30, groceries 27) would
+give a fuller grid but nothing sensible to vary, which would undercut the part
+of the product page most worth showing.
+
+**Alternatives:** Adding dense categories for volume (fuller grids, meaningless
+variants); duplicating products to pad the catalog (dishonest, and D10 rules out
+duplicate listings).
+
+**Trade-offs:** Category pages show 5 items and look sparse next to a real store.
+Variants carry the depth instead — 394 sellable units across 41 products.
+
+**With more time:** Author a small set of products by hand for the thin
+categories, with real variant data rather than synthesised.

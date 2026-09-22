@@ -1,33 +1,42 @@
-import { getCategories } from "@/lib/db/queries/categories";
+import { getCategories, getFeaturedProducts } from "@/lib/db/queries/catalog";
+import { CategoryTile } from "@/components/category-tile";
+import { ProductCard } from "@/components/product-card";
 
-// Read live on every request. Catalog caching is an M2 decision, once there is
-// a catalog worth caching.
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const categories = await getCategories();
+  const [categories, featured] = await Promise.all([
+    getCategories(),
+    getFeaturedProducts(8),
+  ]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-        Shop by category
-      </h1>
-      <p className="mt-2 text-ink-600">
-        {categories.length} categories, read live from the database.
-      </p>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
+      <section aria-labelledby="categories-heading">
+        <h1 id="categories-heading" className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Shop by category
+        </h1>
+        <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {categories.map((category) => (
+            <li key={category.id}>
+              <CategoryTile category={category} />
+            </li>
+          ))}
+        </ul>
+      </section>
 
-      <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {categories.map((category) => (
-          <li key={category.id}>
-            <div className="rounded-lg border border-border bg-surface-sunken p-5">
-              <h2 className="font-medium">{category.name}</h2>
-              <p className="mt-1 text-sm text-ink-600">
-                /{category.slug}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <section aria-labelledby="featured-heading" className="mt-12">
+        <h2 id="featured-heading" className="text-xl font-semibold tracking-tight sm:text-2xl">
+          Top rated
+        </h2>
+        <ul className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {featured.map((product) => (
+            <li key={product.id}>
+              <ProductCard product={product} />
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }

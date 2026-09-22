@@ -9,7 +9,7 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
 
 ## Current milestone
 
-**M1 — Scaffold + deploy.** Done and deployed. M2 is next.
+**M2 — Catalog + product page.** Done and deployed. M3 is next.
 
 **Live URL: https://8x-store.vercel.app** — keep this working at all times (D15).
 
@@ -31,18 +31,42 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
   shell, cart badge), footer, skip link, design tokens. Home reads categories
   live from the database; `/cart` ships its empty state so the header link
   resolves. 10 e2e tests pass locally **and against the deployed URL**.
+- **M2 — Catalog + product page.** `products` and `variants` shipped, with
+  **price and stock on the variant** (D7). Seeded from dummyjson: 6 categories,
+  41 products, 394 variants, 63 of them deliberately out of stock. Variant
+  taxonomy is per category — Size + Colour for clothing and footwear, Storage +
+  Colour for laptops and smartphones, never a size on a device. Home shows
+  photographic category tiles over a Top rated shelf; category pages show a
+  product grid; product pages have a gallery, breadcrumb, three-state variant
+  selector, stock and description. Mobile leads with title and price and pins a
+  sticky buy bar. 29 e2e tests pass locally **and against the deployed URL**.
 
 ## In progress
 
-Nothing. M1 is closed. M2 is next.
+Nothing. M2 is closed. M3 is next.
 
 ## Known bugs
 
-None open. One was found and fixed during M1 — see "What M1 learned".
+None open. Two were found and fixed during M2 — see "What M2 learned".
+
+## What M2 learned
+
+Worth carrying into M3:
+
+- **Drizzle's `onConflictDoUpdate` `set` is keyed by TS property, not column
+  name.** `image_url:` was silently ignored where `imageUrl:` was needed, so the
+  M1 category rows never picked up their images — the seed reported success
+  while doing nothing. Any new upsert needs checking against this.
+- **`nullsNotDistinct` is on `unique()`, not `uniqueIndex()`.** Without it
+  Postgres treats each NULL as distinct, so a no-options product could take two
+  `(null, null)` variant rows.
+- **The catalog is thinner than planned:** dummyjson has only 5 products in most
+  categories (smartphones has 16), so 6 categories give 41 products, not ~50.
+  See D20 — worth knowing before M3 tunes search relevance against it.
+- **Variant state is URL state** (D19), so filters in M3 can use exactly the
+  same pattern and compose with it.
 
 ## What M1 learned
-
-Worth carrying into M2:
 
 - **Tailwind v4 dropped the `bg-[--token]` syntax.** `@theme` tokens generate
   utilities directly (`--color-ink-900` → `bg-ink-900`); the v3 arbitrary-value
@@ -58,6 +82,8 @@ Worth carrying into M2:
 - **pnpm 12 gates postinstall scripts** via `allowBuilds:` in
   `pnpm-workspace.yaml`, not `package.json`. esbuild (drizzle-kit) needs it.
 - **Migrations use `DATABASE_URL_UNPOOLED`**; the app uses the pooled URL.
+- **Next streaming logs `The destination stream closed early`** when Playwright
+  navigates mid-render. Noise, not a failure.
 
 ---
 
@@ -252,5 +278,7 @@ suggestions · pagination · OAuth and password reset.
 
 - ~~Neon and Vercel provisioning~~ — resolved in M1. Both live.
 - ~~Product imagery~~ — resolved: dummyjson.com, see D14.
-- M2 must decide category tile images (`categories.image_url` is nullable and
-  currently null for all six rows).
+- ~~Category tile images~~ — resolved in M2: each tile uses the first image of
+  its first product.
+- M3 should confirm whether 41 products is enough to make search and filters
+  feel real, or whether to widen the category set (D20).
