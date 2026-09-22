@@ -9,7 +9,7 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
 
 ## Current milestone
 
-**M2 — Catalog + product page.** Done and deployed. M3 is next.
+**M3 — Search + filter + sort.** Done and deployed. M4 is next.
 
 **Live URL: https://8x-store.vercel.app** — keep this working at all times (D15).
 
@@ -43,17 +43,37 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
   selector, stock and description. Mobile leads with title and price and pins a
   sticky buy bar. 29 e2e tests pass locally **and against the deployed URL**.
 
+- **M3 — Search + filter + sort.** `/search` with `?q=&category=&sort=`, all
+  URL state and server-rendered. Header search is a plain GET form — no client
+  JavaScript. Category facets carry per-category counts for the current query
+  and ignore the category filter, so the sidebar shows what else the same search
+  would return. Applied filters are removable chips with a clear-all. Five sorts.
+  Two empty states, both with a way out. No ad slots and no duplicate rows, by
+  construction. 57 e2e tests pass locally **and against the deployed URL**.
+
 ## In progress
 
-Nothing. M2 is closed. M3 is next.
+Nothing. M3 is closed. M4 is next.
 
 ## Known bugs
 
 None open. Two were found and fixed during M2 — see "What M2 learned".
 
-## What M2 learned
+## What M3 learned
 
-Worth carrying into M3:
+Worth carrying into M4:
+
+- **Chromium does not render a closed `<details>`'s children at all.** CSS
+  cannot force one open at a breakpoint, so a disclosure that should be open on
+  desktop and closed on mobile needs duplicated markup or a client component.
+  Mobile filters became scrolling chip rows instead (D23). Relevant to M4's cart
+  drawer, which will be a client component for exactly this kind of reason.
+- **`and(a, undefined)` is fine in Drizzle** — optional filters compose without
+  array juggling.
+- **`goBack()` can resolve before the URL settles.** Use
+  `await expect(page).toHaveURL(...)`, not `expect(page.url()).toBe(...)`.
+
+## What M2 learned
 
 - **Drizzle's `onConflictDoUpdate` `set` is keyed by TS property, not column
   name.** `image_url:` was silently ignored where `imageUrl:` was needed, so the

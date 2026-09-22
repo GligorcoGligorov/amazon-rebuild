@@ -94,8 +94,14 @@ test.describe("home page", () => {
     await page.keyboard.press("Tab");
     await expect(page.getByRole("link", { name: "8xstore" })).toBeFocused();
 
-    // The search input is a disabled shell until M3, so focus must skip it and
-    // land on the cart rather than getting stuck.
+    // M3 made the search box real, so it is now in the tab order between the
+    // logo and the cart — it was a disabled shell that focus skipped before.
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("searchbox", { name: "Search products" })).toBeFocused();
+
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Search" })).toBeFocused();
+
     await page.keyboard.press("Tab");
     await expect(page.getByRole("link", { name: /items in cart/ })).toBeFocused();
   });

@@ -469,3 +469,57 @@ assertion on `elementFromPoint` for exactly this.
 
 **With more time:** A compact variant picker in the card for single-dimension
 products, so colour-only items can also add from the grid.
+
+---
+
+## D22 — Search is case-insensitive substring matching, not full-text
+
+**What:** `searchProducts` matches `q` against title, description and brand with
+`ILIKE %term%`. No `tsvector`, no ranking, no stemming. Sorting is explicit and
+user-chosen; "Relevance" with a query falls back to rating, and without one to
+alphabetical.
+
+**Why:** Across 84 products, substring matching finds what a shopper types and is
+one query with no index maintenance or migration. Postgres full-text would add a
+generated column, a GIN index and a ranking function to solve a problem this
+catalog does not have. Honest naming matters too — the sort is called
+"Relevance" and does something defensible rather than pretending to rank.
+
+**Alternatives:** `tsvector` + `ts_rank` (right answer at 10,000 products, wasted
+at 84); a search service such as Typesense (another dependency and another
+account for a 24h demo).
+
+**Trade-offs:** No typo tolerance, no stemming — "watches" does not match
+"watch". Substring matching also means a query can match mid-word. Both are
+acceptable at this size and would not be past a few thousand products.
+
+**With more time:** A `tsvector` column with a trigram index for fuzzy matching,
+and the type-ahead suggestions currently on the cut list.
+
+---
+
+## D23 — Mobile filter controls are scrolling chip rows, not a disclosure
+
+**What:** At mobile widths, sort and category each render as a single
+horizontally-scrolling row of chips. On desktop, categories become a vertical
+sidebar and sort wraps. No JavaScript.
+
+**Why:** Stacked and wrapped, the controls pushed the first product most of a
+screen down — the thing Amazon's mobile search gets wrong. Chip rows cost about
+one row each and signal more content by letting the next chip peek off the edge.
+
+A `<details>` disclosure was tried first and does not work for this: **Chromium
+does not render a closed `<details>` element's children at all**, so CSS cannot
+force it open at desktop widths. The alternatives were duplicating the markup
+for two breakpoints or making it a client component; a chip row is neither.
+
+**Alternatives:** Amazon's full-screen filter sheet (genuinely good, but it is a
+client component with focus management — M3 does not need it at two filter
+dimensions); duplicated mobile and desktop markup (two copies of every facet
+link in the DOM).
+
+**Trade-offs:** A horizontal scroller can hide options off-screen. Mitigated by
+putting the active chip first and letting the next one peek.
+
+**With more time:** The full-screen sheet with a live "Show N results" count,
+once there are enough filter dimensions to justify it.

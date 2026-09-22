@@ -3,7 +3,7 @@
 Filled in as we build. Sections marked _(planned)_ are intent, not fact — when
 a milestone lands, replace the plan with what was actually built.
 
-**Last updated:** 2026-09-22 (M2 shipped — catalog, product page, variants)
+**Last updated:** 2026-09-22 (M3 shipped — search, filter, sort)
 
 ---
 
@@ -100,7 +100,20 @@ Card queries aggregate variants with `min`/`max` so a grid shows one row per
 product with a price range, never a row per variant.
 
 ### Search and filter
-To be filled in at M3.
+
+`/search` (`app/search/page.tsx`) reads `?q=&category=&sort=` and calls
+`searchProducts` in `lib/db/queries/search.ts`. The header is a plain GET form
+posting to `/search`, so search needs no JavaScript.
+
+`q` matches title, description and brand with `ILIKE` (D22). `category` filters
+on the category slug. `sort` is one of five explicit keys; unknown values fall
+back to `relevance` rather than erroring.
+
+Facet counts are a second query that applies the text filter but **not** the
+category filter, so the sidebar shows what else the same search would return.
+
+Every control is a `<Link>` built by `hrefFor`, which preserves the other two
+params — filters and sort compose, and back, reload and sharing all work.
 
 ### Add to cart
 To be filled in at M4.

@@ -1,10 +1,11 @@
 import Link from "next/link";
 
 /**
- * The search input and cart badge are shells until M3 and M4 respectively.
- * They are rendered now so the layout is settled before features land on it —
- * but the input is deliberately disabled rather than a dead box that swallows
- * typing, and the badge reads zero rather than a fake number.
+ * The search box is a plain GET form to /search — no client state, no
+ * JavaScript needed. Typing and pressing Enter produces a shareable URL, which
+ * is the same contract the filters and the variant selector use (D19).
+ *
+ * The cart badge is still a shell until M4.
  */
 export function SiteHeader() {
   return (
@@ -18,22 +19,29 @@ export function SiteHeader() {
         </Link>
 
         {/* Order matters: on mobile this wraps to its own full-width row. */}
-        <div className="order-last w-full sm:order-none sm:w-auto sm:flex-1">
+        <form
+          action="/search"
+          method="get"
+          role="search"
+          className="order-last flex w-full gap-2 sm:order-none sm:w-auto sm:flex-1"
+        >
           <label htmlFor="site-search" className="sr-only">
             Search products
           </label>
           <input
             id="site-search"
+            name="q"
             type="search"
             placeholder="Search products"
-            disabled
-            aria-describedby="site-search-hint"
-            className="w-full rounded-md border border-transparent bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 disabled:cursor-not-allowed disabled:opacity-70"
+            className="min-w-0 flex-1 rounded-md border border-transparent bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400"
           />
-          <span id="site-search-hint" className="sr-only">
-            Search is not available yet
-          </span>
-        </div>
+          <button
+            type="submit"
+            className="shrink-0 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
+          >
+            Search
+          </button>
+        </form>
 
         <Link
           href="/cart"
