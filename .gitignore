@@ -4,3 +4,4 @@ __pycache__/
 
 # .agent-logs/ is deliberately NOT ignored. It is part of the submission.
 .env*
+.playwright-mcp/
