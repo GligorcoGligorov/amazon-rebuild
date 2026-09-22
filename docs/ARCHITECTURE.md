@@ -3,13 +3,18 @@
 Filled in as we build. Sections marked _(planned)_ are intent, not fact — when
 a milestone lands, replace the plan with what was actually built.
 
-**Last updated:** 2026-09-22 (M0 — nothing built yet; data model revised after research)
+**Last updated:** 2026-09-22 (M1 shipped — scaffold, `categories`, app shell)
 
 ---
 
 ## Data model
 
-_(planned — M1/M2 will replace this with the actual Drizzle schema.)_
+**Built at M1:** `categories` only — see `lib/db/schema.ts` and
+`drizzle/0000_cultured_tenebrous.sql`. Everything below it is still _(planned)_;
+M2 adds `products` and `variants`.
+
+The app reads through the pooled `DATABASE_URL`. Migrations and the seed use
+`DATABASE_URL_UNPOOLED` — the pooler does not hold the session state DDL needs.
 
 Intended tables. All ids are uuid; all money is integer cents; all tables carry
 `created_at`.

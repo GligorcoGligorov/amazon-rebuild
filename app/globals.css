@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/* Design tokens. Everything downstream references these, not raw hex. */
+@theme {
+  /* Ink — near-black, warmer than pure black so large fills don't glare. */
+  --color-ink-900: oklch(0.21 0.02 260);
+  --color-ink-800: oklch(0.28 0.02 260);
+  --color-ink-600: oklch(0.46 0.015 260);
+  --color-ink-400: oklch(0.65 0.012 260);
+
+  /* Surfaces */
+  --color-surface: oklch(1 0 0);
+  --color-surface-sunken: oklch(0.975 0.003 260);
+  --color-border: oklch(0.9 0.005 260);
+
+  /* Accent — the buy colour. Warm, high-contrast against ink. */
+  --color-accent: oklch(0.79 0.16 78);
+  --color-accent-hover: oklch(0.74 0.16 78);
+  --color-accent-ink: oklch(0.21 0.02 260);
+
+  /* Link / focus */
+  --color-link: oklch(0.52 0.15 250);
+
+  /* Status */
+  --color-success: oklch(0.55 0.13 150);
+  --color-danger: oklch(0.55 0.19 25);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink-900);
+}
+
+/* A visible focus ring everywhere, on every interactive element. D16 makes
+   this a per-milestone requirement, so it belongs in the base layer. */
+:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+  border-radius: 2px;
+}

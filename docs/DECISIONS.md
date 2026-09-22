@@ -347,3 +347,49 @@ alternative is rebuilding the same components twice.
 
 **With more time:** An automated axe pass in the Playwright suite, so regressions
 fail the build rather than waiting for a manual walk.
+
+---
+
+## D17 — Both Playwright projects run on Chromium
+
+**What:** `mobile-375` uses the iPhone 13 descriptor for viewport, touch and user
+agent, but overrides `browserName` to Chromium. `desktop-1280` is Desktop Chrome.
+
+**Why:** What these specs assert is layout and behaviour at a width — the iPhone
+descriptor's default WebKit engine costs a second ~90MB browser download on every
+clean install and every CI run, for rendering differences these tests do not
+check. `E2E_BASE_URL` lets the same suite run against the deployed URL, which is
+where real-world differences actually show up.
+
+**Alternatives:** Installing WebKit too (more faithful to iOS Safari, slower
+everywhere); testing only one width (rejected — mobile is the judged experience).
+
+**Trade-offs:** A genuine WebKit-only rendering bug would not be caught. Accepted
+for a 24h build, and partly covered by the manual check D15 already requires.
+
+**With more time:** Add WebKit as a third project in CI only.
+
+---
+
+## D18 — The e2e suite asserts computed style, not just roles and text
+
+**What:** Alongside role and text assertions, the suite checks that key surfaces
+actually render — the header has a non-transparent background and contrasts with
+its own text.
+
+**Why:** M1's first deploy shipped a white-on-white header (Tailwind v4 dropped
+the v3 `bg-[--token]` syntax without erroring). Every role, text and overflow
+assertion passed against a page nobody could read. Testing what a user can *do*
+does not test whether they can *see* it.
+
+**Alternatives:** Screenshot snapshots (brittle across engines and font
+rendering, and they fail on every intentional design change); relying on the
+manual check alone (it caught this one, but it will not catch a regression at
+2am on milestone six).
+
+**Trade-offs:** Computed-style assertions couple loosely to design. Mitigated by
+asserting a *property* — "there is a background, and it contrasts" — rather than
+a specific colour value.
+
+**With more time:** An axe accessibility pass in the same suite, so contrast
+regressions fail the build everywhere rather than on one element.

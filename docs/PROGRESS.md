@@ -9,8 +9,9 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
 
 ## Current milestone
 
-**M1 — Scaffold + deploy.** Starting now. M0 (foundations, research, plan) is
-closed.
+**M1 — Scaffold + deploy.** Done and deployed. M2 is next.
+
+**Live URL: https://8x-store.vercel.app** — keep this working at all times (D15).
 
 ## Done
 
@@ -22,14 +23,41 @@ closed.
   `research/auto/` and 8 signed-in ones in `research/manual/`. The plan below is
   derived from it; read it before M2 and again before M6.
 - **Plan approved** (this document, D7–D16).
+- **M1 — Scaffold + deploy.** Next.js 16 (App Router, Turbopack) + TypeScript
+  strict + Tailwind v4. Neon wired through Drizzle with one committed migration
+  (`categories`) and a re-runnable seed. Playwright configured with `mobile-375`
+  and `desktop-1280` projects, both on Chromium. Deployed to Vercel with
+  `DATABASE_URL` set for all three environments. App shell: header (logo, search
+  shell, cart badge), footer, skip link, design tokens. Home reads categories
+  live from the database; `/cart` ships its empty state so the header link
+  resolves. 10 e2e tests pass locally **and against the deployed URL**.
 
 ## In progress
 
-M1. Nothing landed yet.
+Nothing. M1 is closed. M2 is next.
 
 ## Known bugs
 
-None — there is no application code yet.
+None open. One was found and fixed during M1 — see "What M1 learned".
+
+## What M1 learned
+
+Worth carrying into M2:
+
+- **Tailwind v4 dropped the `bg-[--token]` syntax.** `@theme` tokens generate
+  utilities directly (`--color-ink-900` → `bg-ink-900`); the v3 arbitrary-value
+  form silently produces nothing. The first deploy had a white-on-white header
+  because of it. Use the generated names.
+- **Role and text assertions passed while the page was unreadable.** The e2e
+  suite now carries a computed-style guard that asserts the header actually has
+  a background and contrasts with its text. Testing what the user can *do* does
+  not test whether they can *see* it — D15's manual check caught this, not the
+  suite.
+- **`tsx` cannot run top-level `await`** in these `.ts` scripts — migrate and
+  seed wrap their bodies in `main()`.
+- **pnpm 12 gates postinstall scripts** via `allowBuilds:` in
+  `pnpm-workspace.yaml`, not `package.json`. esbuild (drizzle-kit) needs it.
+- **Migrations use `DATABASE_URL_UNPOOLED`**; the app uses the pooled URL.
 
 ---
 
@@ -222,5 +250,7 @@ suggestions · pagination · OAuth and password reset.
 
 ## Open questions
 
-- Neon database and Vercel project are not yet provisioned. First task of M1.
+- ~~Neon and Vercel provisioning~~ — resolved in M1. Both live.
 - ~~Product imagery~~ — resolved: dummyjson.com, see D14.
+- M2 must decide category tile images (`categories.image_url` is nullable and
+  currently null for all six rows).
