@@ -3,7 +3,7 @@
 Filled in as we build. Sections marked _(planned)_ are intent, not fact — when
 a milestone lands, replace the plan with what was actually built.
 
-**Last updated:** 2026-09-22 (M0 — nothing built yet)
+**Last updated:** 2026-09-22 (M0 — nothing built yet; data model revised after research)
 
 ---
 
@@ -18,18 +18,24 @@ Intended tables. All ids are uuid; all money is integer cents; all tables carry
 |---|---|---|
 | `users` | Accounts | `email` (unique), `password_hash`, `name` |
 | `categories` | Browse taxonomy | `slug` (unique), `name` |
-| `products` | Catalog | `slug` (unique), `title`, `description`, `price_cents`, `image_url`, `category_id`, `rating`, `stock` |
+| `products` | Catalog identity | `slug` (unique), `title`, `description`, `image_url`, `category_id` |
+| `variants` | The sellable unit | `product_id`, `name` (e.g. "Black / Large"), `price_cents`, `stock`, `sku` |
 | `carts` | One open cart | `user_id` (nullable — guest carts), `session_token` |
-| `cart_items` | Line items | `cart_id`, `product_id`, `quantity` |
+| `cart_items` | Line items | `cart_id`, `variant_id`, `quantity` |
+| `addresses` | Saved delivery addresses | `user_id`, name and address fields |
 | `orders` | Placed orders | `user_id`, `status`, `total_cents`, shipping address fields |
-| `order_items` | Immutable snapshot | `order_id`, `product_id`, `title`, `price_cents`, `quantity` |
+| `order_items` | Immutable snapshot | `order_id`, `variant_id`, `title`, `variant_name`, `price_cents`, `quantity` |
 
-Two notes worth keeping:
+Three notes worth keeping:
 
-- `order_items` copies title and price at purchase time. Orders must not change
-  when the catalog does.
+- **Price and stock live on `variants`, never on `products`** — see `D7`. A
+  product with no options still gets exactly one variant row. Cart and order
+  lines reference a variant, not a product.
+- `order_items` copies title, variant name and price at purchase time. Orders
+  must not change when the catalog does.
 - Carts are keyed by session token so a guest can fill a cart before signing in;
-  on sign-in the guest cart merges into the user's.
+  on sign-in the guest cart merges into the user's, combining rather than
+  duplicating any variant present in both.
 
 ## Folder structure
 

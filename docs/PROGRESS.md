@@ -9,51 +9,218 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
 
 ## Current milestone
 
-**M0 — Foundations.** Project context, standing rules, and handoff docs, so any
-session can pick up cold. No application code yet.
+**M1 — Scaffold + deploy.** Starting now. M0 (foundations, research, plan) is
+closed.
 
 ## Done
 
 - Automatic prompt/response capture into `.agent-logs/` via Claude Code hooks
-  (`UserPromptSubmit` + `Stop`). Verified working across sessions — see
-  `CAPTURE-TEST.md`.
+  (`UserPromptSubmit` + `Stop`). Verified across sessions — see `CAPTURE-TEST.md`.
 - `CLAUDE.md` — project context, stack, conventions, standing rules.
-- `docs/PROGRESS.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md` created.
+- `docs/PROGRESS.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`.
+- **Research.** `research/FINDINGS.md` plus 44 logged-out screenshots in
+  `research/auto/` and 8 signed-in ones in `research/manual/`. The plan below is
+  derived from it; read it before M2 and again before M6.
+- **Plan approved** (this document, D7–D16).
 
 ## In progress
 
-Nothing. M0 is closed.
+M1. Nothing landed yet.
 
 ## Known bugs
 
 None — there is no application code yet.
 
+---
+
+## Better than Amazon
+
+The five things we deliberately do better, and the three patterns we copy
+wholesale. Each is small; together they are the product judgement being judged.
+Every milestone below carries the ones that apply to it.
+
+**Fix:**
+
+1. **Add to cart never leaves the page.** Amazon navigates to a full interstitial
+   of ads. Ours opens a drawer — "Added to cart", with *View cart* and
+   *Checkout* — and the user stays on the product page. (M4)
+2. **Mobile product pages lead with title and price.** Amazon puts a sponsored ad
+   above the title and the price below a full-screen image, with Add to cart at
+   y≈1,770. Ours shows title and price immediately and pins a sticky Add to cart
+   bar to the bottom. (M2, wired M4)
+3. **No ads, no duplicates.** 20% of Amazon's result cards are sponsored, and the
+   same item can appear twice on one page. Ours has neither — clean results,
+   visible filters, fast. (M3)
+4. **Honest, minimal account page.** Amazon's is 12 cards over ~90 links. Ours
+   has three things: orders, addresses, sign out. (M5/M6)
+5. **Checkout keeps Amazon's shape** — it is the best thing on their site — but
+   without the dead ends. (M6)
+
+**Copy:**
+
+6. **Mobile cart puts the decision first** — subtotal, delivery status and the
+   checkout button above the line items, beside them on desktop. (M4)
+7. **Price and stock live on the variant, not the product.** A schema decision,
+   not a UI one, and expensive to unpick later. (M2)
+8. **The auth wall sits only at checkout and orders.** Everything through the
+   cart is open to guests; the guest cart merges on sign-in. (M4/M5)
+
+---
+
+## Standing exit criteria
+
+These apply to **every** milestone below, on top of its own criteria. Do not
+mark a milestone done until all of them hold.
+
+1. `pnpm typecheck && pnpm lint && pnpm build && pnpm test:e2e` all pass.
+2. **Deployed to Vercel and the live URL opened and checked by hand.** There must
+   be a working public link at every point in the build, so that running out of
+   time still leaves something shipped. A green local build is not a deploy.
+3. **The features this milestone shipped are keyboard-operable and correct at
+   375px.** Accessibility and responsive behaviour are part of each slice, not
+   deferred — M7 is a final pass over finished work, not a cleanup of debt.
+
+---
+
 ## Next steps
 
-Milestone plan, in intended order. Each is a vertical slice that is shippable on
-its own; each ends with typecheck + lint + build + e2e per `CLAUDE.md`.
+Each milestone is a vertical slice that is shippable on its own. Every e2e spec
+runs at 375px and 1280px.
 
-1. **M1 — Scaffold + deploy.** Next.js App Router + TypeScript + Tailwind,
-   Neon database provisioned, Drizzle wired up, Playwright configured, deployed
-   to Vercel. Exit: a deployed page that reads one row from the database, and
-   one e2e spec that loads it at 375px and 1280px.
-2. **M2 — Catalog.** Product schema + seed data, home/browse grid, product
-   detail page. Exit: browse → product detail works on mobile and desktop.
-3. **M3 — Search + filter.** Search by title, category filter, sort. Exit: a
-   user can find a specific product from the home page.
-4. **M4 — Cart.** Add, update quantity, remove; persists across reload. Exit:
-   full add-to-cart flow tested at both widths.
-5. **M5 — Auth.** Auth.js credentials, sign up / sign in / sign out, cart
-   survives sign-in. Exit: auth flow tested at both widths.
-6. **M6 — Checkout + orders.** Address + fake payment, order placement, order
-   history. Exit: the whole browse → checkout → order flow tested end to end.
-7. **M7 — Polish.** Loading and empty states, error boundaries, responsive
-   pass, accessibility pass, final deploy.
+### M1 — Scaffold + deploy
 
-Cut list (deliberate, not forgotten): real payments, reviews, recommendations,
-seller accounts, image upload, inventory management. See `docs/DECISIONS.md`.
+**Build.** Next.js App Router + TypeScript strict + Tailwind. Neon provisioned,
+Drizzle wired with one committed migration. Playwright configured with both
+viewport projects. Vercel project linked and deployed. `next.config` with
+`images.remotePatterns` for `cdn.dummyjson.com` — decided now so M2 never
+touches placeholder imagery (D14). App shell: header (logo, search input shell,
+cart badge), footer, colour and spacing tokens.
+
+**Skip.** Auth, real catalog, search behaviour, any styling system beyond
+tokens. The search input is inert until M3.
+
+**Exit.** A deployed page renders one row read from the database; one e2e spec
+loads it at both widths. Header and footer are keyboard-navigable with a visible
+focus ring.
+
+### M2 — Catalog + product page
+
+**Build.** Schema: `categories`, `products`, `variants` — **price and stock on
+the variant** (D7). Seed from the dummyjson.com product API: ~50 products across
+~6 of its 24 categories, real images from `cdn.dummyjson.com`, prices converted
+from float dollars to integer cents. dummyjson has no variant data, so the seed
+**synthesises** variants — size and colour for the apparel and footwear
+categories, a single variant row for everything else (D14).
+
+Home: category tiles over a featured grid. Category page: product grid. Product
+page: gallery, breadcrumb, title, price, variant selector in three states
+(selected / available / unavailable — shown, never hidden), stock, description.
+
+Mobile is the judged layout: title and price above the fold, sticky Add to cart
+bar at the bottom (inert until M4).
+
+**Skip.** Reviews, ratings, Q&A, recommendations, related products, image zoom,
+per-variant galleries. Grid cards for variant products link to the page rather
+than adding directly — the same as Amazon's "See options", and it falls out of
+the schema for free.
+
+**Exit.** Browse home → category → product at both widths; changing a variant
+updates price, stock and the URL. The variant selector is operable by keyboard
+and its state is announced, not conveyed by colour alone.
+
+### M3 — Search + filter + sort
+
+**Build.** Search over title and description. Category filter and price sort, all
+as URL state (`?q=&category=&sort=`) so back and sharing work and the page stays
+server-rendered. Result count, applied-filter chips with individual removal and a
+clear-all, and a real empty state that offers a way out.
+
+**Skip.** Type-ahead suggestions, facets beyond category and price, pagination
+(~50 products do not need it — revisit past ~100). No sponsored slots and no
+duplicate rows, by construction (D10).
+
+**Exit.** A user can find a specific product from the home page at both widths;
+filters survive a reload and a back-button press. Filters are reachable and
+removable by keyboard, and the result count is announced when it changes.
+
+### M4 — Cart
+
+**Build.** Guest cart keyed by session cookie. Add to cart from the product page
+opens a **drawer** — "Added to cart", *View cart*, *Checkout* — without leaving
+the page; the sticky mobile bar drives it. Cart page: on mobile, subtotal and
+checkout button above the line items; on desktop, a sticky summary beside them.
+Line items show the chosen variant attributes. Quantity stepper whose minus
+becomes a trash icon at 1. Persists across reload. Empty state with an exit.
+
+**Skip.** Save for later, wish lists, gift options, per-item selection
+checkboxes, compare, share, promo codes.
+
+**Exit.** Add → drawer → cart → change quantity → reload persists, at both
+widths, **without a full-page navigation on add**. The drawer traps focus,
+closes on Escape, and returns focus to the button that opened it.
+
+### M5 — Auth
+
+**Build.** Auth.js credentials: sign up, sign in, sign out, password hashed.
+Header reflects signed-in state. **Guest cart merges into the user's cart on
+sign-in** — the case that actually breaks in real builds. Account page with
+exactly three things: orders, addresses, sign out (both lists empty until M6).
+The auth wall guards checkout and orders and nothing else (D13).
+
+**Skip.** OAuth, email verification, password reset, rate limiting, profile
+editing, business accounts.
+
+**Exit.** Sign up → cart survives the transition → sign out → sign in → cart
+still there, at both widths. `/checkout` signed out redirects to sign-in and
+returns to checkout afterwards. Forms have real labels, and validation errors
+are associated with their fields.
+
+### M6 — Checkout + orders
+
+**Build.** Checkout on a stripped layout — no nav, no search — as a four-step
+accordion: **address → delivery → payment → review**. One step open at a time;
+finished steps collapse to a one-line summary with a *Change* link. Order summary
+pinned above, showing `--` for shipping and tax until an address exists, then
+real numbers. Fake payment (no real processor). Place order → confirmation →
+order history and order detail. Addresses saved and reusable, surfaced on the
+account page.
+
+**Skip.** Real payments, promo codes, gift cards, pickup locations, split
+shipments, a tax API (flat rate, stated as such in the UI), guest checkout —
+Amazon has none either.
+
+**Exit.** The whole flow — browse → search → product → cart → sign in → checkout
+→ order visible in history — passes end to end at both widths. The accordion is
+keyboard-operable, each step's heading is a real heading, and moving between
+steps moves focus.
+
+### M7 — Polish
+
+A final pass over finished work, not a cleanup of deferred debt.
+
+**Build.** Consistency sweep of loading, empty and error states. Error
+boundaries. Audit pass at 375px and a keyboard walk of the whole flow. Page
+metadata and titles that say what the page is. Final deploy.
+
+**Skip.** Animation beyond what the drawer needs, dark mode, image optimisation
+past `next/image` defaults.
+
+**Exit.** All standing criteria pass and the full flow is green at both widths on
+the deployed URL.
+
+---
+
+## Cut list
+
+Deliberate, not forgotten. Rationale in `docs/DECISIONS.md` under "what I'd do
+with more time":
+
+Real payments · reviews and ratings · recommendations · seller accounts · image
+upload · inventory management · sponsored placements · Prime-style membership ·
+save for later and wish lists · gift options · promo codes · type-ahead
+suggestions · pagination · OAuth and password reset.
 
 ## Open questions
 
-- None blocking. Neon database and Vercel project are not yet provisioned — that
-  is the first task of M1.
+- Neon database and Vercel project are not yet provisioned. First task of M1.
+- ~~Product imagery~~ — resolved: dummyjson.com, see D14.

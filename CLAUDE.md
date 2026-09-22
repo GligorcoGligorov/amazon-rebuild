@@ -67,7 +67,17 @@ A milestone is done only when all four pass, in this order:
 pnpm typecheck && pnpm lint && pnpm build && pnpm test:e2e
 ```
 
-Do not mark a milestone done, and do not commit it, until they all pass.
+Then two more, every milestone — not just the first and last:
+
+- **Deployed to Vercel, and the live URL opened and checked by hand.** A green
+  local build is not a deploy. There must be a working public link at every point
+  in the build, so running out of time still leaves something shipped. (`D15`)
+- **The features this milestone shipped are keyboard-operable and correct at
+  375px.** Accessibility and responsive behaviour belong to the slice that
+  introduces them. M7 is a final pass over finished work, not a cleanup of
+  deferred debt. (`D16`)
+
+Do not mark a milestone done, and do not commit it, until all of them pass.
 
 **When a test fails, fix the cause, not the test.** Do not weaken an assertion,
 add a wait to paper over a race, skip a spec, or narrow a selector until it
