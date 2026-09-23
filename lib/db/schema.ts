@@ -9,8 +9,16 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-// Users, addresses and orders arrive with the milestones that need them —
-// see docs/ARCHITECTURE.md for the full plan.
+// Addresses and orders arrive with M6 — see docs/ARCHITECTURE.md.
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  // Stored lower-cased and trimmed, so sign-in is not case-sensitive.
+  email: text("email").notNull().unique(),
+  name: text("name").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const categories = pgTable(
   "categories",
@@ -96,10 +104,15 @@ export const carts = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     sessionToken: text("session_token").notNull().unique(),
+    // Set when a guest cart is claimed at sign-in (D27). Null while a guest.
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("carts_session_idx").on(t.sessionToken)],
+  (t) => [
+    index("carts_session_idx").on(t.sessionToken),
+    index("carts_user_idx").on(t.userId),
+  ],
 );
 
 /**
@@ -126,8 +139,9 @@ export const cartItems = pgTable(
   ],
 );
 
-export const cartsRelations = relations(carts, ({ many }) => ({
+export const cartsRelations = relations(carts, ({ one, many }) => ({
   items: many(cartItems),
+  user: one(users, { fields: [carts.userId], references: [users.id] }),
 }));
 
 export const cartItemsRelations = relations(cartItems, ({ one }) => ({
@@ -160,5 +174,6 @@ export const variantsRelations = relations(variants, ({ one }) => ({
 export type Category = typeof categories.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type Variant = typeof variants.$inferSelect;
+export type User = typeof users.$inferSelect;
 export type Cart = typeof carts.$inferSelect;
 export type CartItem = typeof cartItems.$inferSelect;

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { readSessionToken } from "@/lib/actions/cart";
 import { getCart } from "@/lib/db/queries/cart";
 import { formatPrice } from "@/lib/format";
@@ -13,6 +15,11 @@ export const dynamic = "force-dynamic";
  * four-step accordion.
  */
 export default async function CheckoutPage() {
+  // The wall sits here and at /orders, and nowhere else (D13). The callback
+  // brings the shopper back here with their guest cart merged in.
+  const session = await auth();
+  if (!session) redirect("/sign-in?callbackUrl=%2Fcheckout");
+
   const cart = await getCart(await readSessionToken());
 
   return (

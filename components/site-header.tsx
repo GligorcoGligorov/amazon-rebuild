@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { SearchBox, SearchForm } from "./search-box";
 import { readSessionToken } from "@/lib/actions/cart";
 import { getCartCount } from "@/lib/db/queries/cart";
+import { auth } from "@/lib/auth";
 
 /**
  * The search box is a plain GET form to /search: typing and pressing Enter
@@ -13,7 +14,11 @@ import { getCartCount } from "@/lib/db/queries/cart";
  * The cart badge reads the live count for this session.
  */
 export async function SiteHeader() {
-  const count = await getCartCount(await readSessionToken());
+  const [count, session] = await Promise.all([
+    getCartCount(await readSessionToken()),
+    auth(),
+  ]);
+  const firstName = session?.user?.name?.split(" ")[0];
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-ink-900 text-white">
@@ -34,8 +39,22 @@ export async function SiteHeader() {
         </Suspense>
 
         <Link
+          href={session ? "/account" : "/sign-in"}
+          className="ml-auto rounded-md px-2 py-1 text-sm font-medium sm:ml-0"
+        >
+          {session ? (
+            <>
+              <span className="hidden sm:inline">Hi, </span>
+              {firstName ?? "Account"}
+            </>
+          ) : (
+            "Sign in"
+          )}
+        </Link>
+
+        <Link
           href="/cart"
-          className="ml-auto flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium sm:ml-0"
+          className="flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium"
         >
           Cart
           <span

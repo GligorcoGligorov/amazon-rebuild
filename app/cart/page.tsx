@@ -119,16 +119,22 @@ export default async function CartPage() {
                       stock={line.stock}
                       title={line.product.title}
                     />
-                    <form action={removeFromCartAction}>
-                      <input type="hidden" name="itemId" value={line.itemId} />
-                      <button
-                        type="submit"
-                        className="text-sm text-link underline underline-offset-2"
-                      >
-                        Remove
-                        <span className="sr-only"> {line.product.title}</span>
-                      </button>
-                    </form>
+                    {/* At quantity 1 the stepper's trash icon already removes
+                        the line, so a second control would do the same job.
+                        Above 1 the minus only decrements, so Remove earns its
+                        place. */}
+                    {line.quantity > 1 ? (
+                      <form action={removeFromCartAction}>
+                        <input type="hidden" name="itemId" value={line.itemId} />
+                        <button
+                          type="submit"
+                          className="text-sm text-link underline underline-offset-2"
+                        >
+                          Remove
+                          <span className="sr-only"> {line.product.title}</span>
+                        </button>
+                      </form>
+                    ) : null}
                   </div>
                 </div>
 

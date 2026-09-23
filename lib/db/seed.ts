@@ -1,8 +1,10 @@
 import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { sql } from "drizzle-orm";
-import { categories, products, variants } from "./schema";
+import { eq, sql } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+import { carts, categories, products, users, variants } from "./schema";
+import { DEMO_EMAIL, DEMO_NAME, DEMO_PASSWORD } from "../demo-account";
 
 config({ path: ".env.local" });
 
@@ -198,6 +200,32 @@ function combinations(plan: OptionPlan): [string | null, string | null][] {
 async function main() {
   const db = drizzle(neon(url!));
 
+  // --- demo account -------------------------------------------------------
+  // Seeded so a reviewer can reach checkout without signing up. The password
+  // is published on the sign-in page on purpose — see lib/demo-account.ts.
+  const [demoUser] = await db
+    .insert(users)
+    .values({
+      email: DEMO_EMAIL,
+      name: DEMO_NAME,
+      passwordHash: await bcrypt.hash(DEMO_PASSWORD, 10),
+    })
+    .onConflictDoUpdate({
+      target: users.email,
+      set: { name: sql`excluded.name`, passwordHash: sql`excluded.password_hash` },
+    })
+    .returning({ id: users.id });
+
+  // The demo account is shared, so whatever the last visitor left in its cart
+  // would greet the next one. Re-seeding clears it. Cart items cascade.
+  await db.delete(carts).where(eq(carts.userId, demoUser.id));
+
+  // The e2e suite signs up throwaway accounts on the reserved .test TLD, and
+  // it runs against the deployed site too. Sweep them up so the database is
+  // the catalog plus the demo account, not a pile of test debris.
+  await db.delete(users).where(sql`${users.email} like '%@example.test'`);
+  await db.delete(carts).where(sql`${carts.userId} is null and ${carts.updatedAt} < now() - interval '1 day'`);
+
   // --- categories -----------------------------------------------------------
   // Tile image is the first image of the category's first product, so the home
   // page shows real photography rather than an empty box.
@@ -328,7 +356,8 @@ async function main() {
   }
 
   console.log(
-    `seeded ${categoryRows.length} categories, ${productCount} products, ${variantCount} variants`,
+    `seeded ${categoryRows.length} categories, ${productCount} products, ` +
+      `${variantCount} variants, and the ${DEMO_EMAIL} demo account`,
   );
 }
 

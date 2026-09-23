@@ -3,15 +3,18 @@
 Filled in as we build. Sections marked _(planned)_ are intent, not fact — when
 a milestone lands, replace the plan with what was actually built.
 
-**Last updated:** 2026-09-22 (M4 shipped — cart and add-to-cart drawer)
+**Last updated:** 2026-09-22 (M5 shipped — auth, guest-cart merge, account)
 
 ---
 
 ## Data model
 
-**Built:** `categories`, `products`, `variants`, `carts`, `cart_items` — see
-`lib/db/schema.ts` and the migrations in `drizzle/`. `users`, `addresses`,
-`orders` and `order_items` are still _(planned)_.
+**Built:** `categories`, `products`, `variants`, `carts`, `cart_items`, `users`
+— see `lib/db/schema.ts` and the migrations in `drizzle/`. `addresses`, `orders`
+and `order_items` are still _(planned)_.
+
+`carts.user_id` is null while a guest and set when the cart is claimed at
+sign-in (D27).
 
 Variant options are generic and positional: a product declares up to two
 dimensions (`option1_label`, `option2_label`) and each variant carries the
@@ -132,7 +135,22 @@ The cart page and the quantity stepper are Server Components driving Server
 Actions through plain forms, so they need no client JavaScript at all.
 
 ### Sign up / sign in, and guest cart merge
-To be filled in at M5.
+
+`lib/auth.ts` configures Auth.js with a credentials provider and JWT sessions —
+`trustHost: true` is required (D29). `lib/actions/auth.ts` holds the form
+actions.
+
+`signInAction` verifies the password itself with bcrypt, then calls `signIn`
+with `redirectTo`, which performs the redirect by throwing. The merge therefore
+runs **before** `signIn`, since nothing after it executes.
+
+`mergeCartsOnSignIn` folds every other cart owned by the user into the cart the
+session cookie points at, then sets `user_id` on it. The cookie never changes,
+so the cart in front of the shopper is the one that survives.
+
+The wall is a `redirect()` in each guarded page (`/checkout`, `/orders`,
+`/account`), not middleware — three pages, and it keeps bcrypt on the Node
+runtime.
 
 ### Checkout → order
 To be filled in at M6.

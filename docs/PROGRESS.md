@@ -9,7 +9,7 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
 
 ## Current milestone
 
-**M4 — Cart.** Done and deployed. M5 is next.
+**M5 — Auth.** Done and deployed. M6 is next.
 
 **Live URL: https://8x-store.vercel.app** — keep this working at all times (D15).
 
@@ -63,17 +63,42 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
   enhancement, not the mechanism. `/checkout` ships a stub so the drawer links
   somewhere real. 92 e2e tests pass locally **and against the deployed URL**.
 
+- **M5 — Auth.** Auth.js credentials with bcrypt: sign up, sign in, sign out.
+  The wall guards `/checkout`, `/orders` and `/account` and nothing else (D13);
+  signing in from it returns to where the shopper was going, with the **guest
+  cart merged** (D27). A seeded demo account (`demo@8xstore.dev` / `demo1234`)
+  is shown on the sign-in page with a one-click fill, so a reviewer can reach
+  checkout without signing up. Errors are specific on sign-up and deliberately
+  vague on sign-in (D28). Account page has three things: orders, addresses,
+  sign out. 114 e2e tests pass locally **and against the deployed URL**.
+
 ## In progress
 
-Nothing. M4 is closed. M5 is next.
+Nothing. M5 is closed. M6 is next.
 
 ## Known bugs
 
 None open. Two were found and fixed during M2 — see "What M2 learned".
 
-## What M4 learned
+## What M5 learned
 
-Worth carrying into M5:
+Worth carrying into M6:
+
+- **Auth.js v5 beta needs `trustHost: true`.** Without it the credentials
+  callback dead-ends on `/api/auth/callback/credentials` and no session cookie
+  is written. Costs an hour if you do not know it (D29).
+- **`signIn(..., { redirect: false })` did not persist the session cookie** in
+  this beta, and a failed sign-in still redirected as though it had worked.
+  Credentials are verified before calling `signIn` now, which is also what makes
+  the error messages ours to word.
+- **Next renders its route announcer with `role="alert"`.** Any `getByRole
+  ("alert")` assertion has to be scoped to the form or it matches that instead.
+- **The demo account is shared state.** E2E runs against production filled its
+  cart, and the next visitor would have seen it. The seed now clears it and
+  sweeps throwaway `@example.test` accounts — re-run `pnpm db:seed` after
+  testing against the deployed site.
+
+## What M4 learned
 
 - **Focus restoration races `router.refresh()`.** Three wrong versions before
   one that works — see D26. Any future dialog should gate focus moves on the

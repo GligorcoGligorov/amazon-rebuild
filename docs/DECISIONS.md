@@ -601,3 +601,73 @@ settles. Imperceptible, and correct.
 
 **With more time:** `inert` on the background while the drawer is open, so the
 trap is enforced by the platform rather than a Tab handler.
+
+---
+
+## D27 — The guest cart absorbs the user's cart on sign-in
+
+**What:** Signing in folds any cart already owned by the account into the cart
+the shopper is currently looking at, then claims that cart for the user. The
+session cookie is untouched. Quantities sum and clamp to stock, the same as
+adding does.
+
+**Why:** The cart in front of you is the one you just filled; making it vanish
+because an older cart existed on the account is the failure people actually
+notice. Direction matters and only one direction is defensible.
+
+**Alternatives:** Discarding the guest cart (loses what was just added);
+discarding the user's cart (loses what was saved earlier); keeping both and
+asking (a dialog nobody wants mid-checkout).
+
+**Trade-offs:** An item in both carts ends up with the summed quantity, which
+could surprise someone. Capping at stock keeps it from becoming absurd.
+
+**With more time:** Say so — "we added 2 items from your saved cart" — rather
+than silently merging.
+
+---
+
+## D28 — One sign-in error for both wrong password and unknown email
+
+**What:** "That email and password do not match an account", whichever it was.
+Sign-**up** errors are specific: which field, and why, including how short a
+password was.
+
+**Why:** Distinguishing the two on sign-in turns the form into an oracle for
+which addresses have accounts. Sign-up has to reveal that an email is taken —
+there is no way to register otherwise — so it does so plainly and points at
+sign-in. Being vague there would just waste people's time.
+
+**Alternatives:** Precise messages everywhere (leaks account existence); vague
+messages everywhere (users cannot fix what they cannot see).
+
+**Trade-offs:** Someone who mistypes their email gets a slightly unhelpful
+message. The email is preserved in the form so the typo is visible.
+
+**With more time:** Rate limiting on the sign-in route, which is the other half
+of not being an oracle.
+
+---
+
+## D29 — Credentials are verified before calling `signIn`, and `trustHost` is on
+
+**What:** `signInAction` looks the user up and runs `bcrypt.compare` itself,
+then calls Auth.js `signIn` only on success, with `redirectTo`. The config sets
+`trustHost: true`.
+
+**Why:** Both were found the hard way. Across Auth.js v5 betas `signIn` variously
+throws, returns a URL, or returns an object carrying `error`, and guessing wrong
+means a failed sign-in silently redirects as though it succeeded — which is what
+happened here. Verifying first is unambiguous and keeps the failure message ours
+to word (D28). Separately, `signIn(..., { redirect: false })` did not persist the
+session cookie at all in this beta, and without `trustHost` the credentials
+callback dead-ended on `/api/auth/callback/credentials`.
+
+**Alternatives:** Trusting `signIn`'s return shape (broke); hand-rolling sessions
+(more control, but reimplements what Auth.js is here for, against CLAUDE.md).
+
+**Trade-offs:** The password is compared twice on a successful sign-in — once by
+us, once inside `authorize`. Two bcrypt calls on the one path where a person is
+already waiting on a network round trip.
+
+**With more time:** Pin a stable Auth.js release rather than a beta.

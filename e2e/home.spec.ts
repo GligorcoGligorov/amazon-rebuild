@@ -102,6 +102,11 @@ test.describe("home page", () => {
     await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Search" })).toBeFocused();
 
+    // M5 added the account link, which sits before the cart for a signed-out
+    // visitor. Another deliberate product change, not a regression.
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("link", { name: "Sign in" })).toBeFocused();
+
     await page.keyboard.press("Tab");
     await expect(page.getByRole("link", { name: /items in cart/ })).toBeFocused();
   });
