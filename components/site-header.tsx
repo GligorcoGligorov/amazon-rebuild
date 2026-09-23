@@ -25,7 +25,11 @@ export async function SiteHeader() {
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3">
         <Link
           href="/"
-          className="text-lg font-semibold tracking-tight whitespace-nowrap"
+          /* Not flex: making this anchor a flex container turns "8x" and the
+             span into separate flex items, and Chrome then computes the
+             accessible name as "8x store" with a space. Padding gets the same
+             44px target without touching the name. */
+          className="inline-block py-2 text-lg font-semibold tracking-tight whitespace-nowrap"
         >
           8x<span className="text-accent">store</span>
         </Link>
@@ -40,7 +44,7 @@ export async function SiteHeader() {
 
         <Link
           href={session ? "/account" : "/sign-in"}
-          className="ml-auto rounded-md px-2 py-1 text-sm font-medium sm:ml-0"
+          className="ml-auto flex min-h-11 items-center rounded-md px-2 text-sm font-medium sm:ml-0"
         >
           {session ? (
             <>
@@ -54,7 +58,7 @@ export async function SiteHeader() {
 
         <Link
           href="/cart"
-          className="flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium"
+          className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium"
         >
           Cart
           <span

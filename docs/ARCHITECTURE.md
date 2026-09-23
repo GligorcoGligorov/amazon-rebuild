@@ -3,7 +3,7 @@
 Filled in as we build. Sections marked _(planned)_ are intent, not fact — when
 a milestone lands, replace the plan with what was actually built.
 
-**Last updated:** 2026-09-23 (M6 shipped — checkout, orders)
+**Last updated:** 2026-09-23 (M7 shipped — build complete)
 
 ---
 

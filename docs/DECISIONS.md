@@ -795,3 +795,69 @@ forget. It is written into `PROGRESS.md` and this entry because of that.
 
 **With more time:** A seeded test database per environment, so production stock
 is never test data.
+
+---
+
+## D34 — No loading skeletons, because streaming costs more than it buys here
+
+**What:** There are no `loading.tsx` files. Pages are server-rendered and arrive
+whole.
+
+**Why:** M7 added four of them, and each one broke something real.
+
+A `loading.tsx` wraps its segment in Suspense, so Next streams the response and
+flushes the `200` header before the page body runs. A later `notFound()` then
+renders the right content with the **wrong status** — `/product/[slug]`,
+`/category/[slug]` and `/orders/[id]` all silently started returning 200 for a
+missing slug, which three existing specs caught.
+
+Worse, streamed content arrives `hidden` and is revealed by inline script. With
+JavaScript off the skeleton stays and the content never appears — so the
+skeleton broke the no-JS path that search, filters and the cart are deliberately
+built to support.
+
+They also made tests racy in a way that was honest: counting results straight
+after `goto` had always been a race, and the skeleton simply exposed it. Those
+specs now wait for the result count before asserting, which is better testing
+regardless.
+
+Against all that, the benefit is a skeleton flash on pages that serve in
+milliseconds from one or two queries over 84 products.
+
+**Alternatives:** Skeletons only on routes that cannot 404 (that was the second
+attempt — search survived it, then failed the no-JS spec); `<Suspense>` inside
+the page around just the data-dependent part (same streaming semantics, same
+no-JS problem).
+
+**Trade-offs:** On a genuinely slow connection there is no progress indicator
+between clicking and the page arriving. Next's own navigation indicator covers
+some of that.
+
+**With more time:** Partial prerendering, where the shell is static and only the
+dynamic hole streams — which gets the skeleton without giving up the status code.
+
+---
+
+## D35 — Header tap targets are 44px
+
+**What:** The logo, account and cart links in the header are at least 44px tall
+on mobile. They were 28px.
+
+**Why:** An audit across every page at 375px found exactly one systemic issue,
+and this was it — the three most-tapped controls in the app were well under the
+comfortable minimum.
+
+The first fix introduced a subtler bug worth recording: making the logo anchor
+`flex` to centre it turned `8x` and `<span>store</span>` into separate flex
+items, and Chrome then computed the accessible name as **"8x store"** with a
+space, breaking every `getByRole("link", { name: "8xstore" })` in the suite.
+Padding achieves the same height without touching the name.
+
+**Alternatives:** Inflating breadcrumb and in-sentence links too. Rejected —
+those are exempt from the target-size guidance precisely because enlarging text
+inside a sentence looks wrong, and M7 was scoped to real issues, not redesigns.
+
+**Trade-offs:** A slightly taller header on mobile.
+
+**With more time:** The same audit as an automated check in CI, rather than a
+script run once.

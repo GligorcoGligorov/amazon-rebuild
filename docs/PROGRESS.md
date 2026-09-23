@@ -3,13 +3,13 @@
 Handoff note. Rewritten at the end of every milestone. If you are a fresh
 session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
 
-**Last updated:** 2026-09-22
+**Last updated:** 2026-09-23
 
 ---
 
 ## Current milestone
 
-**M6 — Checkout + orders.** Done and deployed. M7 is next.
+**M7 — Polish.** Done and deployed. **The build is complete and submitted.**
 
 **Live URL: https://8x-store.vercel.app** — keep this working at all times (D15).
 
@@ -86,9 +86,18 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
   Confirmation, order history and order detail all ship; addresses are saved and
   offered again. 144 e2e tests pass locally **and against the deployed URL**.
 
+- **M7 — Polish.** A real 404 with chrome and two exits (it was the bare Next
+  default), error boundaries for the shop and for checkout, header tap targets
+  raised from 28px to 44px (D35), and an audit of every page at both widths that
+  found **no horizontal overflow anywhere**. Loading skeletons were added and
+  then removed — they broke the 404 status and the no-JavaScript path (D34). The
+  demo account now seeds with two past orders and a saved address, so a reviewer
+  lands on filled pages. `README.md` written for reviewers. 157 e2e tests pass
+  locally **and against the deployed URL**.
+
 ## In progress
 
-Nothing. M6 is closed. M7 is next.
+Nothing. M7 is closed and the build is finished.
 
 ## Known bugs
 
@@ -101,9 +110,21 @@ next account created in that browser inherited them. Fixed by making cart
 ownership exclusive and enforcing it with a database constraint (D30), with a
 regression spec walking the exact reported path.
 
-## What M6 learned
+## What M7 learned
 
-Worth carrying into M7:
+- **`loading.tsx` is not free.** It streams the response, which flushes a 200
+  before `notFound()` can set a 404, and it hides content from users without
+  JavaScript. Removed on all four routes (D34).
+- **`display: flex` on an anchor changes its accessible name.** Children become
+  separate flex items and Chrome joins them with a space, so `8x<span>store` 
+  became "8x store". Use padding for height, not flex.
+- **A stale `next start` will happily serve an old build** and send you chasing
+  a bug that is not there. Kill the port, not just the process name.
+- **An audit script beats eyeballing.** One pass over every page at both widths
+  found the one real issue (28px tap targets) and proved the absence of the
+  thing most likely to be wrong (horizontal overflow).
+
+## What M6 learned
 
 - **The e2e suite eats its own fixtures.** Order specs decrement real stock, and
   after 61 test orders the product every helper reached for was sold out — 28

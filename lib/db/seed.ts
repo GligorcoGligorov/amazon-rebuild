@@ -1,10 +1,20 @@
 import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq, sql } from "drizzle-orm";
+import { asc, eq, like, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { carts, categories, products, users, variants } from "./schema";
+import {
+  addresses,
+  carts,
+  categories,
+  orderItems,
+  orders,
+  products,
+  users,
+  variants,
+} from "./schema";
 import { DEMO_EMAIL, DEMO_NAME, DEMO_PASSWORD } from "../demo-account";
+import { deliveryEta, DEMO_PAYMENT_LABEL, taxCentsFor } from "../checkout";
 
 config({ path: ".env.local" });
 
@@ -355,9 +365,122 @@ async function main() {
     }
   }
 
+  // --- demo history -------------------------------------------------------
+  // A reviewer signing in should land on a filled account, not three empty
+  // pages. Two past orders and a saved address, rebuilt from scratch each run
+  // so re-seeding is still idempotent.
+  await db.delete(orders).where(eq(orders.userId, demoUser.id));
+  await db.delete(addresses).where(eq(addresses.userId, demoUser.id));
+
+  const [demoAddress] = await db
+    .insert(addresses)
+    .values({
+      userId: demoUser.id,
+      fullName: DEMO_NAME,
+      line1: "27 Kingsway",
+      line2: "Flat 4",
+      city: "Brooklyn",
+      region: "NY",
+      postalCode: "11201",
+      country: "United States",
+    })
+    .returning({ id: addresses.id });
+
+  // Matched on slug *prefix*: every slug ends in the dummyjson product id, and
+  // hardcoding those would make the history silently vanish if the API renumbers.
+  const historyPlan = [
+    {
+      daysAgo: 16,
+      method: "standard" as const,
+      shippingCents: 0,
+      prefixes: ["apple-airpods-", "amazon-echo-plus-"],
+    },
+    {
+      daysAgo: 4,
+      method: "express" as const,
+      shippingCents: 1299,
+      prefixes: ["nike-air-jordan-1-"],
+    },
+  ];
+
+  let historyCount = 0;
+
+  for (const plan of historyPlan) {
+    const picked = await db
+      .select({
+        variantId: variants.id,
+        priceCents: variants.priceCents,
+        option1Value: variants.option1Value,
+        option2Value: variants.option2Value,
+        slug: products.slug,
+        title: products.title,
+        images: products.images,
+      })
+      .from(products)
+      .innerJoin(variants, eq(variants.productId, products.id))
+      .where(or(...plan.prefixes.map((prefix) => like(products.slug, `${prefix}%`))))
+      .orderBy(asc(products.slug), asc(variants.position));
+
+    // One variant per product — the first, deterministically.
+    const bySlug = new Map<string, (typeof picked)[number]>();
+    for (const row of picked) if (!bySlug.has(row.slug)) bySlug.set(row.slug, row);
+    const lines = [...bySlug.values()];
+    if (lines.length === 0) {
+      throw new Error(
+        `Demo history: no products matched ${plan.prefixes.join(", ")}. ` +
+          "The catalog slugs have changed — update historyPlan.",
+      );
+    }
+
+    const subtotalCents = lines.reduce((n, l) => n + l.priceCents, 0);
+    const taxCents = taxCentsFor(subtotalCents);
+    const placedAt = new Date(Date.now() - plan.daysAgo * 24 * 60 * 60 * 1000);
+
+    const [order] = await db
+      .insert(orders)
+      .values({
+        number: `8X-DEMO${historyCount + 1}`,
+        userId: demoUser.id,
+        status: "placed",
+        shippingName: DEMO_NAME,
+        shippingLine1: "27 Kingsway",
+        shippingLine2: "Flat 4",
+        shippingCity: "Brooklyn",
+        shippingRegion: "NY",
+        shippingPostalCode: "11201",
+        shippingCountry: "United States",
+        deliveryMethod: plan.method,
+        deliveryEta: deliveryEta(plan.method, placedAt),
+        paymentLabel: DEMO_PAYMENT_LABEL,
+        subtotalCents,
+        shippingCents: plan.shippingCents,
+        taxCents,
+        totalCents: subtotalCents + plan.shippingCents + taxCents,
+        placedAt,
+      })
+      .returning({ id: orders.id });
+
+    await db.insert(orderItems).values(
+      lines.map((line) => ({
+        orderId: order.id,
+        variantId: line.variantId,
+        productSlug: line.slug,
+        productTitle: line.title,
+        variantName:
+          [line.option1Value, line.option2Value].filter(Boolean).join(" · ") || null,
+        imageUrl: line.images[0],
+        unitPriceCents: line.priceCents,
+        quantity: 1,
+      })),
+    );
+
+    historyCount++;
+  }
+
   console.log(
     `seeded ${categoryRows.length} categories, ${productCount} products, ` +
-      `${variantCount} variants, and the ${DEMO_EMAIL} demo account`,
+      `${variantCount} variants, and the ${DEMO_EMAIL} demo account ` +
+      `with ${historyCount} past orders and ${demoAddress ? 1 : 0} saved address`,
   );
 }
 

@@ -1,4 +1,17 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+/**
+ * Counts results, waiting for them first.
+ *
+ * `/search` streams behind a loading skeleton, so counting straight after
+ * `goto` races the stream and returns 0. The count line is rendered with the
+ * results, so waiting for it is the signal that the page has settled.
+ */
+async function resultCount(page: Page) {
+  await expect(page.getByText(/^\d+ products?/)).toBeVisible();
+  return page.getByRole("article").count();
+}
+
 
 test.describe("search", () => {
   test("a shopper can find a specific product from the home page", async ({ page }) => {
@@ -21,7 +34,7 @@ test.describe("search", () => {
   test("results are stated as a count, with no sponsored rows", async ({ page }) => {
     await page.goto("/search?q=watch");
 
-    const count = await page.getByRole("article").count();
+    const count = await resultCount(page);
     expect(count).toBeGreaterThan(0);
     await expect(page.getByText(`${count} products`)).toBeVisible();
 
@@ -47,7 +60,7 @@ test.describe("search", () => {
     page,
   }) => {
     await page.goto("/search");
-    const before = await page.getByRole("article").count();
+    const before = await resultCount(page);
 
     await page
       .getByRole("navigation", { name: "Category" })
@@ -55,7 +68,7 @@ test.describe("search", () => {
       .click();
 
     await expect(page).toHaveURL(/category=laptops/);
-    const after = await page.getByRole("article").count();
+    const after = await resultCount(page);
     expect(after).toBeLessThan(before);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Laptops");
 
@@ -66,7 +79,7 @@ test.describe("search", () => {
     await chip.click();
 
     await expect(page).not.toHaveURL(/category=/);
-    expect(await page.getByRole("article").count()).toBe(before);
+    expect(await resultCount(page)).toBe(before);
   });
 
   test("sorting by price actually orders the results", async ({ page }) => {
@@ -94,12 +107,12 @@ test.describe("search", () => {
     await page.goto("/search?q=watch&category=mens-watches&sort=price-desc");
 
     const composed = page.url();
-    const count = await page.getByRole("article").count();
+    const count = await resultCount(page);
     expect(count).toBeGreaterThan(0);
 
     await page.reload();
     await expect(page).toHaveURL(composed);
-    expect(await page.getByRole("article").count()).toBe(count);
+    expect(await resultCount(page)).toBe(count);
     await expect(page.getByRole("link", { name: "Price: high to low" })).toHaveAttribute(
       "aria-current",
       "true",
@@ -132,7 +145,7 @@ test.describe("search", () => {
     await wider.click();
     await expect(page).toHaveURL(/q=macbook/);
     await expect(page).not.toHaveURL(/category=/);
-    expect(await page.getByRole("article").count()).toBeGreaterThan(0);
+    expect(await resultCount(page)).toBeGreaterThan(0);
   });
 
   test("filters and sort are reachable and operable by keyboard", async ({ page }) => {
@@ -182,10 +195,7 @@ test.describe("search", () => {
       ["sunglasses", /Sunglasses/],
     ] as const) {
       await page.goto(`/search?q=${query}`);
-      expect(
-        await page.getByRole("article").count(),
-        `"${query}" must return results`,
-      ).toBeGreaterThan(0);
+      expect(await resultCount(page), `"${query}" must return results`).toBeGreaterThan(0);
       await expect(
         page
           .getByRole("navigation", { name: "Category" })
@@ -196,12 +206,12 @@ test.describe("search", () => {
 
     // Brand.
     await page.goto("/search?q=apple");
-    expect(await page.getByRole("article").count()).toBeGreaterThan(0);
+    expect(await resultCount(page)).toBeGreaterThan(0);
     await expect(page.getByRole("article").first()).toContainText(/apple/i);
 
     // Category name — no product is titled "Laptops".
     await page.goto("/search?q=laptops");
-    expect(await page.getByRole("article").count()).toBeGreaterThan(0);
+    expect(await resultCount(page)).toBeGreaterThan(0);
     await expect(
       page.getByRole("navigation", { name: "Category" }).getByRole("link", {
         name: /^Laptops/,
@@ -209,10 +219,10 @@ test.describe("search", () => {
     ).toBeVisible();
 
     // Multiple words narrow rather than widen.
-    const broad = await page.goto("/search?q=apple").then(() => page.getByRole("article").count());
-    const narrow = await page
-      .goto("/search?q=apple+watch")
-      .then(() => page.getByRole("article").count());
+    await page.goto("/search?q=apple");
+    const broad = await resultCount(page);
+    await page.goto("/search?q=apple+watch");
+    const narrow = await resultCount(page);
     expect(narrow).toBeLessThan(broad);
   });
 
@@ -252,7 +262,7 @@ test.describe("search without JavaScript", () => {
     await page.getByRole("searchbox", { name: "Search products" }).fill("watch");
     await page.getByRole("button", { name: "Search" }).click();
     await expect(page).toHaveURL(/q=watch/);
-    expect(await page.getByRole("article").count()).toBeGreaterThan(0);
+    expect(await resultCount(page)).toBeGreaterThan(0);
 
     await page
       .getByRole("navigation", { name: "Category" })
