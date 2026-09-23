@@ -22,7 +22,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: product?.title ?? "Product" };
 }
 
-/** Resolve the chosen variant from the URL, falling back to the first in stock. */
+/**
+ * Resolve the chosen variant from the URL.
+ *
+ * With nothing specified, prefer one that is actually in stock: landing on a
+ * product and being shown "Out of stock" when three other colours are available
+ * is a worse first impression than it needs to be, and Amazon defaults to an
+ * available option too. An explicit choice is always honoured, in stock or not.
+ */
 function resolveVariant(
   variants: Variant[],
   option1Label: string | null,
@@ -37,6 +44,10 @@ function resolveVariant(
 
   const want1 = pick(option1Label);
   const want2 = pick(option2Label);
+
+  if (want1 === undefined && want2 === undefined) {
+    return variants.find((v) => v.stock > 0) ?? variants[0];
+  }
 
   const exact = variants.find(
     (v) =>

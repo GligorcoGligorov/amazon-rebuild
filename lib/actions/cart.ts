@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { cartItems, carts, variants } from "@/lib/db/schema";
+import { cartItems, carts, users, variants } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
 import { ensureCartForWrite, getVariantForCart, type CartOwner } from "@/lib/db/queries/cart";
 
@@ -14,6 +14,27 @@ const ONE_MONTH = 60 * 60 * 24 * 30;
 /** The session token as the *reader* sees it — never creates one. */
 export async function readSessionToken(): Promise<string | undefined> {
   return (await cookies()).get(COOKIE)?.value;
+}
+
+/**
+ * The signed-in user id, but only if that user still exists.
+ *
+ * A JWT session outlives the row it points at — delete an account (the seed
+ * sweeps throwaway test ones) and any browser still holding the token will try
+ * to write a cart against a missing foreign key, which is a 500. Reads degrade
+ * on their own: an unknown user id simply matches no cart. Writes need this.
+ */
+async function liveUserId(): Promise<string | null> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return null;
+
+  const [row] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return row?.id ?? null;
 }
 
 /**
@@ -65,10 +86,9 @@ export async function addToCart(
   if (!variant) return { ok: false, error: "That item no longer exists." };
   if (variant.stock <= 0) return { ok: false, error: "That option is out of stock." };
 
-  const session = await auth();
-  const userId = session?.user?.id ?? null;
   // A signed-in shopper still gets a session token, so the cookie exists if
   // they later sign out — but their cart is found by user id.
+  const userId = await liveUserId();
   const token = await requireSessionToken();
   const cartId = await ensureCartForWrite({ userId, sessionToken: token });
 

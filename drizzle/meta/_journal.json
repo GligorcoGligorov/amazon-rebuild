@@ -43,6 +43,13 @@
       "when": 1790124392085,
       "tag": "0005_boring_praxagora",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790125627229,
+      "tag": "0006_closed_dark_beast",
+      "breakpoints": true
     }
   ]
 }

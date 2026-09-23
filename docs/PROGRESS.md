@@ -9,7 +9,7 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
 
 ## Current milestone
 
-**M5 — Auth.** Done and deployed. M6 is next.
+**M6 — Checkout + orders.** Done and deployed. M7 is next.
 
 **Live URL: https://8x-store.vercel.app** — keep this working at all times (D15).
 
@@ -72,9 +72,23 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
   vague on sign-in (D28). Account page has three things: orders, addresses,
   sign out. 114 e2e tests pass locally **and against the deployed URL**.
 
+- **M6 — Checkout + orders.** Checkout is a four-step accordion — address →
+  delivery → payment → review — on a stripped layout with no nav, no search and
+  no cart badge (D11). Finished steps collapse to a one-line summary with a
+  *Change* link; the open step lives in the URL, so the back button walks the
+  accordion and a validation error cannot lose the shopper's place. A step that
+  has not been reached cannot be jumped to. The summary shows `--` for what
+  cannot be known yet, resolving in two stages: tax when an address is entered,
+  shipping when a speed is chosen. Payment is one pre-selected demo method —
+  **no card fields exist anywhere in the app** (D31). Placing an order runs in a
+  single transaction over a WebSocket pool that locks the variant rows, verifies
+  stock, snapshots the lines, decrements stock and empties the cart (D32).
+  Confirmation, order history and order detail all ship; addresses are saved and
+  offered again. 144 e2e tests pass locally **and against the deployed URL**.
+
 ## In progress
 
-Nothing. M5 is closed. M6 is next.
+Nothing. M6 is closed. M7 is next.
 
 ## Known bugs
 
@@ -87,9 +101,27 @@ next account created in that browser inherited them. Fixed by making cart
 ownership exclusive and enforcing it with a database constraint (D30), with a
 regression spec walking the exact reported path.
 
-## What M5 learned
+## What M6 learned
 
-Worth carrying into M6:
+Worth carrying into M7:
+
+- **The e2e suite eats its own fixtures.** Order specs decrement real stock, and
+  after 61 test orders the product every helper reached for was sold out — 28
+  specs failed at once and none of them were flaky. Helpers now pick a card that
+  can actually be added, the product page defaults to an in-stock variant, and
+  `pnpm db:seed` is the reset (D33). **Re-seed after any run against
+  production.**
+- **A JWT outlives the row it points at.** The seed sweeps throwaway accounts,
+  so a browser can hold a token for a user that no longer exists. Reads degrade
+  on their own — an unknown id matches no cart — but writes hit a foreign key
+  and 500. Cart and checkout writes now verify the user still exists first.
+- **Neon's HTTP driver has no transactions.** Anything multi-statement and
+  atomic needs the WebSocket pool in `lib/db/pool.ts` (D32).
+- **Route groups are how you strip chrome for one flow.** `app/(shop)` keeps the
+  header and footer; `app/(checkout)` has its own minimal shell. A nested layout
+  cannot remove a parent's header, so this is the only clean way.
+
+## What M5 learned
 
 - **Auth.js v5 beta needs `trustHost: true`.** Without it the credentials
   callback dead-ends on `/api/auth/callback/credentials` and no session cookie

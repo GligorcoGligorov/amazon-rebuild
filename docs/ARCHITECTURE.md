@@ -3,15 +3,19 @@
 Filled in as we build. Sections marked _(planned)_ are intent, not fact — when
 a milestone lands, replace the plan with what was actually built.
 
-**Last updated:** 2026-09-22 (M5 shipped — auth, guest-cart merge, account)
+**Last updated:** 2026-09-23 (M6 shipped — checkout, orders)
 
 ---
 
 ## Data model
 
-**Built:** `categories`, `products`, `variants`, `carts`, `cart_items`, `users`
-— see `lib/db/schema.ts` and the migrations in `drizzle/`. `addresses`, `orders`
-and `order_items` are still _(planned)_.
+**Built:** the whole model — `categories`, `products`, `variants`, `carts`,
+`cart_items`, `users`, `addresses`, `orders`, `order_items`. See
+`lib/db/schema.ts` and the migrations in `drizzle/`.
+
+`orders` copies the shipping address rather than referencing it, and
+`order_items` copies title, variant name, image and price. Editing or deleting a
+saved address must not rewrite an order already placed.
 
 A cart has exactly one owner: `session_token` set and `user_id` null for a
 guest, or `user_id` set and `session_token` null for a user. The
@@ -62,7 +66,9 @@ _(planned — M1 will replace this with the tree that exists.)_
 
 ```
 app/                      routes (App Router)
-  (shop)/                 browse, search, product detail
+  layout.tsx              html/body only — chrome lives in the groups
+  (shop)/                 browse, search, product, cart, account, orders
+  (checkout)/             checkout, on a stripped layout with no nav (D11)
   cart/
   checkout/
   orders/
@@ -156,7 +162,22 @@ The wall is a `redirect()` in each guarded page (`/checkout`, `/orders`,
 runtime.
 
 ### Checkout → order
-To be filled in at M6.
+
+`app/(checkout)/checkout/page.tsx` renders all four steps; which one is open is
+derived from `?step=` clamped to the furthest step the shopper has actually
+answered, so `?step=review` with no address lands on address. Address and
+delivery choices ride in the URL too (`?address=&delivery=&paid=1`) and every
+address id is re-scoped to the owner on read, so a guessed id resolves to
+nothing.
+
+`lib/checkout.ts` holds the money and delivery rules in one place — flat-rate
+shipping, a flat 8% tax, weekday-only ETAs — and `totalsFor` returns `null` for
+anything not yet knowable, which `OrderSummary` renders as `--` (D11).
+
+`placeOrderAction` in `lib/actions/checkout.ts` runs the whole placement in one
+transaction over `txDb` (D32), locking variant rows `FOR UPDATE` before checking
+stock. It redirects to `/orders/[id]?placed=1`, which is the confirmation page
+and the order detail page in one — so a reload still works.
 
 ## Rendering and caching
 

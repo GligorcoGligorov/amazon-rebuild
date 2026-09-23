@@ -13,7 +13,11 @@ const freshEmail = () =>
 
 async function addSomethingToCart(page: Page) {
   await page.goto("/category/mobile-accessories");
-  const card = page.getByRole("article").first();
+  // Stock moves as the suite places orders, so pick an addable card.
+  const card = page
+    .getByRole("article")
+    .filter({ has: page.getByRole("button", { name: "Add to cart" }) })
+    .first();
   const title = (await card.getByRole("heading").innerText()).trim();
   await card.getByRole("button", { name: "Add to cart" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -64,9 +68,12 @@ test.describe("the auth wall", () => {
     await page.getByLabel("Password").fill("passphrase-1");
     await page.getByRole("button", { name: "Sign in" }).click();
 
-    // Back where they were going, not dumped on the home page.
+    // Back where they were going, not dumped on the home page. M6 replaced the
+    // checkout stub with the accordion, so the summary is what states the cart.
     await expect(page).toHaveURL(/\/checkout$/);
-    await expect(page.getByRole("main")).toContainText(/1 item,/);
+    await expect(
+      page.getByRole("region", { name: "Order summary" }),
+    ).toContainText("Items (1)");
 
     // And the guest cart came with them.
     await page.goto("/cart");

@@ -10,8 +10,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
-// Addresses and orders arrive with M6 — see docs/ARCHITECTURE.md.
-
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   // Stored lower-cased and trimmed, so sign-in is not case-sensitive.
@@ -169,6 +167,99 @@ export const cartItemsRelations = relations(cartItems, ({ one }) => ({
   }),
 }));
 
+/** A delivery address a user has saved. Reused at checkout, editable there. */
+export const addresses = pgTable(
+  "addresses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    fullName: text("full_name").notNull(),
+    line1: text("line1").notNull(),
+    line2: text("line2"),
+    city: text("city").notNull(),
+    region: text("region").notNull(),
+    postalCode: text("postal_code").notNull(),
+    country: text("country").notNull().default("United States"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("addresses_user_idx").on(t.userId)],
+);
+
+export const orders = pgTable(
+  "orders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Short human-readable code, for the confirmation page and support.
+    number: text("number").notNull().unique(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("placed"),
+
+    // The address is copied, not referenced: deleting or editing a saved
+    // address must not rewrite history on an order already placed.
+    shippingName: text("shipping_name").notNull(),
+    shippingLine1: text("shipping_line1").notNull(),
+    shippingLine2: text("shipping_line2"),
+    shippingCity: text("shipping_city").notNull(),
+    shippingRegion: text("shipping_region").notNull(),
+    shippingPostalCode: text("shipping_postal_code").notNull(),
+    shippingCountry: text("shipping_country").notNull(),
+
+    deliveryMethod: text("delivery_method").notNull(),
+    deliveryEta: text("delivery_eta").notNull(),
+    paymentLabel: text("payment_label").notNull(),
+
+    subtotalCents: integer("subtotal_cents").notNull(),
+    shippingCents: integer("shipping_cents").notNull(),
+    taxCents: integer("tax_cents").notNull(),
+    totalCents: integer("total_cents").notNull(),
+
+    placedAt: timestamp("placed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("orders_user_idx").on(t.userId), index("orders_placed_idx").on(t.placedAt)],
+);
+
+/**
+ * An immutable snapshot. Title, variant and price are copied at purchase time
+ * so an order never changes when the catalog does. `variantId` is kept for
+ * "buy it again" but is nullable — the catalog may outlive or lose a variant.
+ */
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    variantId: uuid("variant_id").references(() => variants.id, {
+      onDelete: "set null",
+    }),
+    productSlug: text("product_slug").notNull(),
+    productTitle: text("product_title").notNull(),
+    variantName: text("variant_name"),
+    imageUrl: text("image_url").notNull(),
+    unitPriceCents: integer("unit_price_cents").notNull(),
+    quantity: integer("quantity").notNull(),
+  },
+  (t) => [index("order_items_order_idx").on(t.orderId)],
+);
+
+export const addressesRelations = relations(addresses, ({ one }) => ({
+  user: one(users, { fields: [addresses.userId], references: [users.id] }),
+}));
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(users, { fields: [orders.userId], references: [users.id] }),
+  items: many(orderItems),
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, { fields: [orderItems.orderId], references: [orders.id] }),
+}));
+
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
 }));
@@ -194,3 +285,6 @@ export type Variant = typeof variants.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Cart = typeof carts.$inferSelect;
 export type CartItem = typeof cartItems.$inferSelect;
+export type Address = typeof addresses.$inferSelect;
+export type Order = typeof orders.$inferSelect;
+export type OrderItem = typeof orderItems.$inferSelect;

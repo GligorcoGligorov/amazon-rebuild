@@ -708,3 +708,90 @@ written by the buggy version had to be fixed before the constraints could hold.
 
 **With more time:** The same exclusivity for orders and addresses, before they
 are written rather than after.
+
+---
+
+## D31 — Checkout never collects card details, not even fake ones
+
+**What:** The payment step offers one pre-selected method — "Demo card ending
+4242", a string constant. There is no card number, expiry or CVC field anywhere
+in the app, no payment SDK installed, and no processor keys in the environment.
+A second option is shown disabled with its reason, mirroring how Amazon presents
+an ineligible payment plan.
+
+**Why:** A realistic-looking card form is the single thing most likely to make
+someone type a *real* card number into a demo. The safest field is the one that
+does not exist. It also costs less to build than a form we would have to
+validate and then throw away, and Amazon's own step for a saved card is a
+one-click confirmation anyway — so this is faithful, not a shortcut.
+
+**Alternatives:** A fake card form with shape validation (looks more complete,
+invites real card entry, and stores nothing anyway); a test-mode Stripe
+integration (real keys, real PCI surface, hours of work, on the cut list).
+
+**Trade-offs:** The payment step is the thinnest of the four. It is labelled as
+a demo in three places so nobody mistakes it for a real checkout.
+
+**With more time:** Stripe in test mode with their hosted element, so no card
+data touches our code even then.
+
+---
+
+## D32 — Placing an order is one transaction over a second connection
+
+**What:** `placeOrderAction` runs inside `txDb.transaction()`: re-read the cart,
+lock the variant rows `FOR UPDATE`, verify stock, insert the order and its
+snapshot lines, decrement stock, empty the cart. All of it or none of it. This
+needs a WebSocket pool (`lib/db/pool.ts`) alongside the HTTP driver the rest of
+the app uses.
+
+**Why:** Every other write in this app is a single statement and safe on its
+own. An order is six writes that must not half-happen — a decremented stock with
+no order, or an order with a cart still full, is corruption a demo cannot
+recover from. Neon's HTTP driver has no multi-statement transactions at all, so
+the choice was a second connection or hand-rolled compensation logic.
+
+The row lock matters as much as the transaction. A cart can sit for days and the
+catalog moves underneath it, and two people buying the last unit at the same
+moment is exactly the race `FOR UPDATE` exists for. Stock is re-checked inside
+the lock, never before it.
+
+**Alternatives:** One giant CTE statement (atomic, but unreadable and it cannot
+return a useful "only 2 left" message); optimistic decrement with compensation
+(more code, more failure modes).
+
+**Trade-offs:** A second driver and connection pool to understand, used on
+exactly one path. Node 22's global WebSocket means no `ws` package.
+
+**With more time:** Reserve stock when the cart is created rather than at
+checkout, which is what real stores do.
+
+---
+
+## D33 — The e2e suite mutates the catalog, and the seed is the reset
+
+**What:** Order specs place real orders, which decrement real stock. Running the
+suite against the deployed site drains the same catalog a reviewer browses.
+`pnpm db:seed` restores stock, clears the demo cart and sweeps throwaway
+accounts — **re-run it after any pass against production.**
+
+**Why:** Found the hard way: 61 test orders left the first product in
+`mobile-accessories` at zero stock, and 28 specs then failed because the fixture
+they all reached for could no longer be added. The tests were not flaky; they
+had eaten their own fixture.
+
+Two fixes followed, both worth having on their own. Test helpers now pick a card
+that can actually be added rather than blindly taking the first one. And the
+product page now defaults to an **in-stock** variant when the URL specifies
+none — landing on "Out of stock" while three other colours are available was a
+worse first impression than it needed to be, whatever the tests do.
+
+**Alternatives:** A separate test database (right answer, but it doubles the
+provisioning and the deploy check would no longer exercise the real one); making
+order specs roll back (they would stop testing the transaction).
+
+**Trade-offs:** A manual re-seed step after production runs, which is easy to
+forget. It is written into `PROGRESS.md` and this entry because of that.
+
+**With more time:** A seeded test database per environment, so production stock
+is never test data.

@@ -196,9 +196,14 @@ test.describe("cart page", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page).toHaveURL(/\/checkout$/);
-    await expect(page.getByRole("heading", { name: "Checkout", level: 1 })).toBeVisible();
-    // The demo cart is shared, so assert the item arrived rather than a count.
-    await expect(page.getByRole("main")).toContainText(/item/);
+    // M6 replaced the checkout stub with the accordion; the heading and the
+    // summary are what prove the cart came along.
+    await expect(
+      page.getByRole("heading", { name: "Secure checkout", level: 1 }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Order summary" }),
+    ).toContainText(/Items \(\d+\)/);
   });
 
   test("no horizontal scroll on the cart", async ({ page }) => {
