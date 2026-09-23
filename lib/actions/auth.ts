@@ -1,14 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { carts, cartItems, variants } from "@/lib/db/schema";
 import { signIn, signOut } from "@/lib/auth";
 import { createUser, getUserByEmail, normaliseEmail } from "@/lib/db/queries/users";
-import { ensureCart } from "@/lib/db/queries/cart";
-import { readSessionToken } from "@/lib/actions/cart";
+import { ensureCartForWrite } from "@/lib/db/queries/cart";
+import { clearCartSession, readSessionToken } from "@/lib/actions/cart";
 
 export type AuthFormState = {
   error?: string;
@@ -26,59 +26,63 @@ function safeCallback(raw: FormDataEntryValue | null): string {
 }
 
 /**
- * Folds the guest cart and any cart already owned by this user into one, then
- * claims it for the user (D27).
+ * Folds the guest cart into the user's cart and drops the guest row (D30).
  *
- * The session cookie is left alone: the cart the shopper is *looking at* wins
- * and absorbs the rest, so signing in never appears to empty the cart. Merging
- * sums quantities and clamps to stock in SQL, the same as adding does.
+ * Direction matters. The **user's** cart is the target, because it is the one
+ * that has to survive sign-out; the guest cart is consumed. Nothing is lost —
+ * quantities sum and clamp to stock, the same as adding does — and because the
+ * guest row is deleted and the cookie cleared, a cart can never be claimed by a
+ * second account.
  */
 async function mergeCartsOnSignIn(userId: string): Promise<void> {
   const token = await readSessionToken();
-  // No cookie means nothing to merge *into*; claim the user's newest cart
-  // instead by leaving it as it is — the header will read it on next write.
-  if (!token) return;
 
-  const targetId = await ensureCart(token);
+  const guest = token
+    ? (
+        await db
+          .select({ id: carts.id })
+          .from(carts)
+          .where(and(eq(carts.sessionToken, token), isNull(carts.userId)))
+          .limit(1)
+      )[0]
+    : undefined;
 
-  const others = await db
-    .select({ id: carts.id })
-    .from(carts)
-    .where(and(eq(carts.userId, userId), ne(carts.id, targetId)));
+  const targetId = await ensureCartForWrite({ userId, sessionToken: token ?? "" });
 
-  for (const other of others) {
+  if (guest && guest.id !== targetId) {
     const rows = await db
-      .select({ variantId: cartItems.variantId, quantity: cartItems.quantity })
+      .select({
+        variantId: cartItems.variantId,
+        quantity: cartItems.quantity,
+        stock: variants.stock,
+      })
       .from(cartItems)
-      .where(eq(cartItems.cartId, other.id));
+      .innerJoin(variants, eq(variants.id, cartItems.variantId))
+      .where(eq(cartItems.cartId, guest.id));
 
     for (const row of rows) {
-      const [variant] = await db
-        .select({ stock: variants.stock })
-        .from(variants)
-        .where(eq(variants.id, row.variantId))
-        .limit(1);
-      if (!variant || variant.stock <= 0) continue;
-
+      if (row.stock <= 0) continue;
       await db
         .insert(cartItems)
         .values({
           cartId: targetId,
           variantId: row.variantId,
-          quantity: Math.min(row.quantity, variant.stock),
+          quantity: Math.min(row.quantity, row.stock),
         })
         .onConflictDoUpdate({
           target: [cartItems.cartId, cartItems.variantId],
           set: {
-            quantity: sql`least(${cartItems.quantity} + ${row.quantity}, ${variant.stock})`,
+            quantity: sql`least(${cartItems.quantity} + ${row.quantity}, ${row.stock})`,
           },
         });
     }
 
-    await db.delete(carts).where(eq(carts.id, other.id));
+    await db.delete(carts).where(eq(carts.id, guest.id));
   }
 
-  await db.update(carts).set({ userId }).where(eq(carts.id, targetId));
+  // The guest session is spent. Clearing it means the cookie cannot point at
+  // anything claimable, and sign-out will hand out a fresh one.
+  await clearCartSession();
 }
 
 export async function signInAction(
@@ -171,6 +175,10 @@ export async function signUpAction(
 }
 
 export async function signOutAction(): Promise<void> {
+  // The user's cart stays in the database under their user id; what goes is the
+  // browser's claim on it. Without this the next visitor to this browser — or
+  // the next account created in it — inherits the cart (D30).
+  await clearCartSession();
   revalidatePath("/", "layout");
   await signOut({ redirectTo: "/" });
 }

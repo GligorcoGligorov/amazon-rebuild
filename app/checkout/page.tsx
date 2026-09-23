@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { readSessionToken } from "@/lib/actions/cart";
+import { currentCartOwner } from "@/lib/actions/cart";
 import { getCart } from "@/lib/db/queries/cart";
 import { formatPrice } from "@/lib/format";
 
@@ -20,7 +20,7 @@ export default async function CheckoutPage() {
   const session = await auth();
   if (!session) redirect("/sign-in?callbackUrl=%2Fcheckout");
 
-  const cart = await getCart(await readSessionToken());
+  const cart = await getCart(await currentCartOwner());
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">

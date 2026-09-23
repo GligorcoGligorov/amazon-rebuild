@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { SearchBox, SearchForm } from "./search-box";
-import { readSessionToken } from "@/lib/actions/cart";
+import { currentCartOwner } from "@/lib/actions/cart";
 import { getCartCount } from "@/lib/db/queries/cart";
 import { auth } from "@/lib/auth";
 
@@ -15,7 +15,7 @@ import { auth } from "@/lib/auth";
  */
 export async function SiteHeader() {
   const [count, session] = await Promise.all([
-    getCartCount(await readSessionToken()),
+    currentCartOwner().then(getCartCount),
     auth(),
   ]);
   const firstName = session?.user?.name?.split(" ")[0];

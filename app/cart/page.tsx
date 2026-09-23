@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { readSessionToken, removeFromCartAction } from "@/lib/actions/cart";
+import { currentCartOwner, removeFromCartAction } from "@/lib/actions/cart";
 import { getCart } from "@/lib/db/queries/cart";
 import { QuantityStepper } from "@/components/quantity-stepper";
 import { formatPrice } from "@/lib/format";
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Cart" };
 export const dynamic = "force-dynamic";
 
 export default async function CartPage() {
-  const cart = await getCart(await readSessionToken());
+  const cart = await getCart(await currentCartOwner());
 
   if (cart.itemCount === 0) {
     return (

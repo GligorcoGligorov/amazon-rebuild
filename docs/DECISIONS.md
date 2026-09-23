@@ -604,7 +604,12 @@ trap is enforced by the platform rather than a Tab handler.
 
 ---
 
-## D27 — The guest cart absorbs the user's cart on sign-in
+## D27 — The guest cart absorbs the user's cart on sign-in — **superseded by D30**
+
+> **Superseded by D30.** Claiming the guest cart in place, cookie and all, let a
+> signed-out visitor see the previous user's cart and let the next account
+> inherit it. Kept here because the reasoning below is still why the merge takes
+> the union rather than discarding either side.
 
 **What:** Signing in folds any cart already owned by the account into the cart
 the shopper is currently looking at, then claims that cart for the user. The
@@ -671,3 +676,35 @@ us, once inside `authorize`. Two bcrypt calls on the one path where a person is
 already waiting on a network round trip.
 
 **With more time:** Pin a stable Auth.js release rather than a beta.
+
+---
+
+## D30 — A cart belongs to a session or to a user, never to both
+
+**What:** `carts.session_token` and `carts.user_id` are mutually exclusive, and a
+database `CHECK` constraint refuses any row that sets both or neither. Reads
+resolve by user id when signed in and by session token **only when the cart is
+unclaimed** otherwise. Sign-in folds the guest cart into the user's cart and
+deletes the guest row; sign-out clears the cart cookie.
+
+**Why:** This replaces D27, which was wrong. Claiming the guest cart in place —
+setting `user_id` while keeping its `session_token` — left the browser holding a
+cookie that still resolved to a cart now owned by someone. Found on the deployed
+site: signing out left the header showing the previous user's items, and the
+next account created in that browser inherited them. A shared or borrowed
+computer would have leaked one person's cart to another.
+
+The direction of the merge also flipped. D27 made the guest cart the target
+because it is "the one in front of you"; but that cart has to survive sign-out,
+and only a user-owned cart does. The user's cart is now the target and the guest
+cart is consumed. The union of items is identical either way.
+
+**Alternatives:** Keeping one nullable owner and filtering in application code
+only (the original design — one missed query reintroduces the leak); deleting
+the user's cart at sign-in (loses what they saved earlier).
+
+**Trade-offs:** Two migrations carrying hand-written data repair, because rows
+written by the buggy version had to be fixed before the constraints could hold.
+
+**With more time:** The same exclusivity for orders and addresses, before they
+are written rather than after.

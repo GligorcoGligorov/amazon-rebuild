@@ -1,4 +1,4 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../index";
 import { carts, cartItems, products, variants, categories } from "../schema";
 
@@ -6,7 +6,7 @@ export type CartLine = {
   itemId: string;
   variantId: string;
   quantity: number;
-  /** What the shopper picked, e.g. "Large · Black - 7 Pack". Null if no options. */
+  /** What the shopper picked, e.g. "Large · Black". Null if no options. */
   optionSummary: string | null;
   priceCents: number;
   lineTotalCents: number;
@@ -21,15 +21,30 @@ export type CartSummary = {
   subtotalCents: number;
 };
 
-export const EMPTY_CART: CartSummary = {
-  lines: [],
-  itemCount: 0,
-  subtotalCents: 0,
-};
+export const EMPTY_CART: CartSummary = { lines: [], itemCount: 0, subtotalCents: 0 };
 
-/** Reads a cart by session token. Never creates one — reads must not write. */
-export async function getCart(sessionToken: string | undefined): Promise<CartSummary> {
-  if (!sessionToken) return EMPTY_CART;
+/**
+ * Who is asking. A signed-in shopper's cart is found by user id and *only* by
+ * user id — never by the cookie still sitting in their browser (D30). That is
+ * what stops a signed-out visitor from seeing the last user's cart, and a new
+ * account from inheriting it.
+ */
+export type CartOwner = { userId?: string | null; sessionToken?: string | null };
+
+function ownerWhere(owner: CartOwner) {
+  if (owner.userId) return eq(carts.userId, owner.userId);
+  if (owner.sessionToken) {
+    // A guest cart must still be unclaimed. Belt and braces: the cookie is
+    // rotated at sign-out, so this should never match an owned row anyway.
+    return and(eq(carts.sessionToken, owner.sessionToken), isNull(carts.userId));
+  }
+  return null;
+}
+
+/** Reads a cart. Never creates one — reads must not write. */
+export async function getCart(owner: CartOwner): Promise<CartSummary> {
+  const where = ownerWhere(owner);
+  if (!where) return EMPTY_CART;
 
   const rows = await db
     .select({
@@ -44,14 +59,13 @@ export async function getCart(sessionToken: string | undefined): Promise<CartSum
       productTitle: products.title,
       images: products.images,
       categorySlug: categories.slug,
-      createdAt: cartItems.createdAt,
     })
     .from(carts)
     .innerJoin(cartItems, eq(cartItems.cartId, carts.id))
     .innerJoin(variants, eq(variants.id, cartItems.variantId))
     .innerJoin(products, eq(products.id, variants.productId))
     .innerJoin(categories, eq(categories.id, products.categoryId))
-    .where(eq(carts.sessionToken, sessionToken))
+    .where(where)
     .orderBy(asc(cartItems.createdAt));
 
   const lines: CartLine[] = rows.map((row) => ({
@@ -79,21 +93,41 @@ export async function getCart(sessionToken: string | undefined): Promise<CartSum
 }
 
 /** Just the badge number, so the header does not load the whole cart. */
-export async function getCartCount(sessionToken: string | undefined): Promise<number> {
-  if (!sessionToken) return 0;
+export async function getCartCount(owner: CartOwner): Promise<number> {
+  const where = ownerWhere(owner);
+  if (!where) return 0;
+
   const [row] = await db
     .select({ count: sql<number>`coalesce(sum(${cartItems.quantity}), 0)::int` })
     .from(carts)
     .leftJoin(cartItems, eq(cartItems.cartId, carts.id))
-    .where(eq(carts.sessionToken, sessionToken));
+    .where(where);
   return row?.count ?? 0;
 }
 
-/** Upserts the cart row for a session and returns its id. Used by mutations. */
-export async function ensureCart(sessionToken: string): Promise<string> {
+/** Finds the cart id for a mutation, creating one if there is none yet. */
+export async function ensureCartForWrite(owner: {
+  userId?: string | null;
+  sessionToken: string;
+}): Promise<string> {
+  if (owner.userId) {
+    const [existing] = await db
+      .select({ id: carts.id })
+      .from(carts)
+      .where(eq(carts.userId, owner.userId))
+      .limit(1);
+    if (existing) return existing.id;
+
+    const [created] = await db
+      .insert(carts)
+      .values({ userId: owner.userId, sessionToken: null })
+      .returning({ id: carts.id });
+    return created.id;
+  }
+
   const [row] = await db
     .insert(carts)
-    .values({ sessionToken })
+    .values({ sessionToken: owner.sessionToken })
     .onConflictDoUpdate({
       target: carts.sessionToken,
       set: { updatedAt: new Date() },

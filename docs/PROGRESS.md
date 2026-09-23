@@ -78,7 +78,14 @@ Nothing. M5 is closed. M6 is next.
 
 ## Known bugs
 
-None open. Two were found and fixed during M2 — see "What M2 learned".
+None open.
+
+One shipped and was caught on the deployed site: a cart was keyed only by the
+session cookie, so signing out left the browser pointing at a cart that now
+belonged to a user. A signed-out visitor saw the previous user's items, and the
+next account created in that browser inherited them. Fixed by making cart
+ownership exclusive and enforcing it with a database constraint (D30), with a
+regression spec walking the exact reported path.
 
 ## What M5 learned
 
@@ -93,6 +100,14 @@ Worth carrying into M6:
   the error messages ours to word.
 - **Next renders its route announcer with `role="alert"`.** Any `getByRole
   ("alert")` assertion has to be scoped to the form or it matches that instead.
+- **Ownership rules need a database constraint, not just careful queries.** The
+  cart leak came from a row that was simultaneously a guest cart and a user
+  cart. One `CHECK` makes the state unrepresentable; the application code alone
+  had already failed to (D30).
+- **A regression test has to walk the reported path, not a tidier one.** The
+  first version of the ownership spec signed up with an empty cart and passed
+  against the buggy code. Only starting as a guest — which is what the report
+  described — exercised the claim path where the bug lived.
 - **The demo account is shared state.** E2E runs against production filled its
   cart, and the next visitor would have seen it. The seed now clears it and
   sweeps throwaway `@example.test` accounts — re-run `pnpm db:seed` after

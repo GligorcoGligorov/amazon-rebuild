@@ -222,3 +222,115 @@ test.describe("error messages", () => {
     expect(describedBy).toContain("password-error");
   });
 });
+
+/**
+ * Regression suite for a real bug found on the deployed site: the cart was
+ * keyed only by the session cookie, so after sign-out the browser still
+ * pointed at the cart that now belonged to user A. A signed-out visitor saw
+ * A's items, and the next account created in that browser inherited them.
+ *
+ * Fixed by making ownership exclusive — see D30.
+ */
+test.describe("cart ownership across accounts", () => {
+  test("a cart never follows the browser from one account to another", async ({
+    page,
+  }) => {
+    const emailA = freshEmail();
+    const emailB = freshEmail();
+    const password = "passphrase-1";
+
+    // --- A fills a cart as a guest, then signs up ------------------------
+    // Starting as a guest matters: this is the path where the cart gets
+    // claimed by an account, and where the original bug lived.
+    const itemA = await addSomethingToCart(page);
+    await expect(page.getByRole("link", { name: /1 item in cart/ })).toBeVisible();
+
+    await page.goto("/sign-up");
+    await page.getByLabel("Name").fill("Alpha Tester");
+    await page.getByLabel("Email").fill(emailA);
+    await page.getByLabel("Password").fill(password);
+    await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page.getByRole("link", { name: /Alpha/ })).toBeVisible();
+
+    await page.goto("/cart");
+    await expect(page.getByRole("listitem").first()).toContainText(itemA);
+
+    // --- A signs out: the browser must forget the cart -------------------
+    await page.goto("/account");
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+
+    await expect(
+      page.getByRole("link", { name: /0 items in cart/ }),
+      "a signed-out visitor must not see the last user's cart",
+    ).toBeVisible();
+
+    await page.goto("/cart");
+    await expect(page.getByText("Your cart is empty")).toBeVisible();
+
+    // --- B signs up in the same browser ----------------------------------
+    await page.goto("/sign-up");
+    await page.getByLabel("Name").fill("Bravo Tester");
+    await page.getByLabel("Email").fill(emailB);
+    await page.getByLabel("Password").fill(password);
+    await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page.getByRole("link", { name: /Bravo/ })).toBeVisible();
+
+    await page.goto("/cart");
+    await expect(
+      page.getByText("Your cart is empty"),
+      "a new account must not inherit the previous user's cart",
+    ).toBeVisible();
+
+    // --- back to A: their own cart is still there -------------------------
+    await page.goto("/account");
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+
+    await page.goto("/sign-in");
+    await page.getByLabel("Email").fill(emailA);
+    await page.getByLabel("Password").fill(password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    // Wait for the session to land before navigating, or /cart renders as a guest.
+    await expect(page.getByRole("link", { name: /Alpha/ })).toBeVisible();
+
+    await page.goto("/cart");
+    await expect(
+      page.getByRole("listitem").first(),
+      "signing back in must restore the user's own saved cart",
+    ).toContainText(itemA);
+    await expect(page.getByRole("link", { name: /1 item in cart/ })).toBeVisible();
+  });
+
+  test("a guest cart is consumed by the account it merges into", async ({ page }) => {
+    const email = freshEmail();
+    const title = await addSomethingToCart(page);
+    await expect(page.getByRole("link", { name: /1 item in cart/ })).toBeVisible();
+
+    await page.goto("/sign-up");
+    await page.getByLabel("Name").fill("Merge Once");
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password").fill("passphrase-1");
+    await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page.getByRole("link", { name: /Merge/ })).toBeVisible();
+
+    await page.goto("/cart");
+    await expect(page.getByRole("listitem").first()).toContainText(title);
+
+    // Sign out: the item stays with the account, not with the browser.
+    await page.goto("/account");
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page.getByRole("link", { name: /0 items in cart/ })).toBeVisible();
+
+    // A second account created here starts empty — the guest cart was spent.
+    await page.goto("/sign-up");
+    await page.getByLabel("Name").fill("Second Account");
+    await page.getByLabel("Email").fill(freshEmail());
+    await page.getByLabel("Password").fill("passphrase-1");
+    await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page.getByRole("link", { name: /Second/ })).toBeVisible();
+
+    await page.goto("/cart");
+    await expect(page.getByText("Your cart is empty")).toBeVisible();
+  });
+});

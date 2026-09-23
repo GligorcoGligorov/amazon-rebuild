@@ -2,10 +2,11 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { cartItems, carts, variants } from "@/lib/db/schema";
-import { ensureCart, getVariantForCart } from "@/lib/db/queries/cart";
+import { auth } from "@/lib/auth";
+import { ensureCartForWrite, getVariantForCart, type CartOwner } from "@/lib/db/queries/cart";
 
 const COOKIE = "cart_session";
 const ONE_MONTH = 60 * 60 * 24 * 30;
@@ -13,6 +14,22 @@ const ONE_MONTH = 60 * 60 * 24 * 30;
 /** The session token as the *reader* sees it — never creates one. */
 export async function readSessionToken(): Promise<string | undefined> {
   return (await cookies()).get(COOKIE)?.value;
+}
+
+/**
+ * Who the current cart belongs to. Signed in means the user's cart, full stop;
+ * the cookie is ignored (D30).
+ */
+export async function currentCartOwner(): Promise<CartOwner> {
+  const [session, sessionToken] = await Promise.all([auth(), readSessionToken()]);
+  return session?.user?.id
+    ? { userId: session.user.id }
+    : { sessionToken: sessionToken ?? null };
+}
+
+/** Rotates the guest session at sign-out, so the next visitor starts empty. */
+export async function clearCartSession(): Promise<void> {
+  (await cookies()).delete(COOKIE);
 }
 
 async function requireSessionToken(): Promise<string> {
@@ -48,8 +65,12 @@ export async function addToCart(
   if (!variant) return { ok: false, error: "That item no longer exists." };
   if (variant.stock <= 0) return { ok: false, error: "That option is out of stock." };
 
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+  // A signed-in shopper still gets a session token, so the cookie exists if
+  // they later sign out — but their cart is found by user id.
   const token = await requireSessionToken();
-  const cartId = await ensureCart(token);
+  const cartId = await ensureCartForWrite({ userId, sessionToken: token });
 
   const wanted = Math.max(1, Math.trunc(quantity));
 
@@ -78,28 +99,38 @@ export async function addToCart(
   };
 }
 
+/**
+ * Every mutation is scoped to the caller's own cart, so an item id belonging to
+ * someone else cannot be edited by guessing it.
+ */
+async function ownedItem(itemId: string) {
+  const owner = await currentCartOwner();
+  const where = owner.userId
+    ? eq(carts.userId, owner.userId)
+    : owner.sessionToken
+      ? and(eq(carts.sessionToken, owner.sessionToken), isNull(carts.userId))
+      : null;
+  if (!where) return null;
+
+  const [row] = await db
+    .select({ id: cartItems.id, stock: variants.stock })
+    .from(cartItems)
+    .innerJoin(carts, eq(carts.id, cartItems.cartId))
+    .innerJoin(variants, eq(variants.id, cartItems.variantId))
+    .where(and(eq(cartItems.id, itemId), where))
+    .limit(1);
+  return row ?? null;
+}
+
 /** Sets an absolute quantity. Zero removes the line, matching the trash icon. */
 export async function setQuantity(itemId: string, quantity: number): Promise<void> {
-  const token = await readSessionToken();
-  if (!token) return;
-
   const next = Math.trunc(quantity);
-
   if (next <= 0) {
     await removeFromCart(itemId);
     return;
   }
 
-  // Scoped to this session's cart, so an item id from elsewhere cannot be
-  // edited by guessing it.
-  const [owned] = await db
-    .select({ id: cartItems.id, stock: variants.stock })
-    .from(cartItems)
-    .innerJoin(carts, eq(carts.id, cartItems.cartId))
-    .innerJoin(variants, eq(variants.id, cartItems.variantId))
-    .where(and(eq(cartItems.id, itemId), eq(carts.sessionToken, token)))
-    .limit(1);
-
+  const owned = await ownedItem(itemId);
   if (!owned) return;
 
   await db
@@ -112,16 +143,7 @@ export async function setQuantity(itemId: string, quantity: number): Promise<voi
 }
 
 export async function removeFromCart(itemId: string): Promise<void> {
-  const token = await readSessionToken();
-  if (!token) return;
-
-  const [owned] = await db
-    .select({ id: cartItems.id })
-    .from(cartItems)
-    .innerJoin(carts, eq(carts.id, cartItems.cartId))
-    .where(and(eq(cartItems.id, itemId), eq(carts.sessionToken, token)))
-    .limit(1);
-
+  const owned = await ownedItem(itemId);
   if (!owned) return;
 
   await db.delete(cartItems).where(eq(cartItems.id, itemId));
@@ -132,10 +154,7 @@ export async function removeFromCart(itemId: string): Promise<void> {
 
 /** Form-action wrappers, so the cart page works without JavaScript. */
 export async function setQuantityAction(formData: FormData): Promise<void> {
-  await setQuantity(
-    String(formData.get("itemId")),
-    Number(formData.get("quantity")),
-  );
+  await setQuantity(String(formData.get("itemId")), Number(formData.get("quantity")));
 }
 
 export async function removeFromCartAction(formData: FormData): Promise<void> {

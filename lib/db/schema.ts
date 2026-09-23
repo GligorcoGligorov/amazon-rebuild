@@ -6,8 +6,9 @@ import {
   uuid,
   index,
   unique,
+  check,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // Addresses and orders arrive with M6 — see docs/ARCHITECTURE.md.
 
@@ -95,23 +96,39 @@ export const variants = pgTable(
 );
 
 /**
- * One open cart per browser session. `sessionToken` is a cookie value, so a
- * guest can fill a cart before signing in (D13). M5 adds `userId` and merges
- * the guest cart into the user's on sign-in.
+ * A cart belongs either to a browser session or to a user, never ambiguously
+ * to both (D30).
+ *
+ * - Guest cart: `session_token` set, `user_id` null.
+ * - User cart:  `user_id` set, `session_token` null.
+ *
+ * Sign-in folds the guest cart into the user's and drops the guest row, so a
+ * cart can never be claimed twice. Sign-out clears the cookie, so the next
+ * visitor starts empty rather than inheriting whoever was here last.
  */
 export const carts = pgTable(
   "carts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    sessionToken: text("session_token").notNull().unique(),
-    // Set when a guest cart is claimed at sign-in (D27). Null while a guest.
-    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    // Null once the cart belongs to a user.
+    sessionToken: text("session_token").unique(),
+    // Null while the cart belongs to a browser session.
+    userId: uuid("user_id")
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index("carts_session_idx").on(t.sessionToken),
     index("carts_user_idx").on(t.userId),
+    // Exactly one owner. The application enforces this too, but the bug that
+    // made a signed-out visitor see the last user's cart came from a row that
+    // had both — so the database refuses to store one now.
+    check(
+      "carts_owner_exclusive",
+      sql`(${t.userId} is null) <> (${t.sessionToken} is null)`,
+    ),
   ],
 );
 

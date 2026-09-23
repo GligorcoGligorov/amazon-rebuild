@@ -13,8 +13,11 @@ a milestone lands, replace the plan with what was actually built.
 — see `lib/db/schema.ts` and the migrations in `drizzle/`. `addresses`, `orders`
 and `order_items` are still _(planned)_.
 
-`carts.user_id` is null while a guest and set when the cart is claimed at
-sign-in (D27).
+A cart has exactly one owner: `session_token` set and `user_id` null for a
+guest, or `user_id` set and `session_token` null for a user. The
+`carts_owner_exclusive` CHECK constraint enforces it (D30). Sign-in folds the
+guest cart into the user's and deletes the guest row; sign-out clears the
+cookie.
 
 Variant options are generic and positional: a product declares up to two
 dimensions (`option1_label`, `option2_label`) and each variant carries the
@@ -144,9 +147,9 @@ actions.
 with `redirectTo`, which performs the redirect by throwing. The merge therefore
 runs **before** `signIn`, since nothing after it executes.
 
-`mergeCartsOnSignIn` folds every other cart owned by the user into the cart the
-session cookie points at, then sets `user_id` on it. The cookie never changes,
-so the cart in front of the shopper is the one that survives.
+`mergeCartsOnSignIn` folds the guest cart into the **user's** cart, deletes the
+guest row and clears the cookie (D30). The user's cart is the target because it
+is the one that has to survive sign-out.
 
 The wall is a `redirect()` in each guarded page (`/checkout`, `/orders`,
 `/account`), not middleware — three pages, and it keeps bcrypt on the Node
