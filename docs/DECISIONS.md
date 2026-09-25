@@ -954,3 +954,26 @@ link, so it is clickable while each card stays one tab stop.
 
 **Trade-offs:** The shelf below skips the pick to avoid showing it twice, so
 "Top rated" starts from the second-best in-stock product with options.
+
+---
+
+## D39 — The add-to-cart drawer renders through a portal
+
+**What:** `AddedDrawer` is rendered with `createPortal(…, document.body)`
+instead of in place next to the button that opened it.
+
+**Why:** Found in the R3 screenshots. The buttons that open the drawer sit
+inside sticky elements — the mobile buy bar and, since R2, the desktop buying
+column — and `position: sticky` creates a stacking context. Rendered in place,
+the drawer's `z-50` only competed inside that context, so the sticky header
+(`z-40`) painted over the drawer's top edge and its Close button. The old
+mobile buy bar had the same trap; it was masked because the old drawer was a
+short bottom sheet that never reached the header.
+
+**Alternatives:** Raising the header's and bar's z-indices around it (fragile:
+any future sticky ancestor reintroduces it); removing the sticky column
+(worse layout to fix a rendering detail).
+
+**Trade-offs:** None of substance. The drawer is only created after a click, so
+`document` always exists; focus trap and focus return are unchanged and the
+suite's focus specs pass as before.

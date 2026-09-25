@@ -4,6 +4,10 @@ import type { Metadata } from "next";
 import { currentCartOwner, removeFromCartAction } from "@/lib/actions/cart";
 import { getCart } from "@/lib/db/queries/cart";
 import { QuantityStepper } from "@/components/quantity-stepper";
+import { buttonClass } from "@/components/ui/button";
+import { CatalogueNo } from "@/components/ui/catalogue-no";
+import { Price } from "@/components/ui/price";
+import { Receipt, ReceiptLine } from "@/components/ui/receipt";
 import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Cart" };
@@ -11,124 +15,132 @@ export const dynamic = "force-dynamic";
 
 export default async function CartPage() {
   const cart = await getCart(await currentCartOwner());
+  const itemsLabel = `${cart.itemCount} ${cart.itemCount === 1 ? "item" : "items"}`;
 
   if (cart.itemCount === 0) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-10">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Your cart</h1>
-        <p className="mt-2 text-ink-600">
-          Your cart is empty. Nothing has been added yet.
-        </p>
-        <Link
-          href="/"
-          className="mt-6 inline-block rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
-        >
-          Browse categories
-        </Link>
+      <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 sm:pt-14">
+        <p className="eyebrow">Cart · 0 items</p>
+        <h1 className="mt-2 font-display text-5xl leading-none sm:text-6xl">Your cart</h1>
+        <div className="mt-8 max-w-md border-t border-ink-900 pt-6">
+          <p className="text-ink-600">
+            Your cart is empty. Nothing has been added yet.
+          </p>
+          <Link href="/" className={buttonClass({ variant: "ink", className: "mt-6" })}>
+            Browse categories
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Your cart</h1>
+    <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 sm:pt-10">
+      <p className="eyebrow">Cart · {itemsLabel}</p>
+      <h1 className="mt-2 font-display text-5xl leading-none sm:text-6xl">Your cart</h1>
 
       {/*
         Mobile DOM order is deliberate: the summary and the checkout button come
         before the line items, so everything needed to decide is in the first
-        viewport. Amazon's mobile cart does this and their desktop one does not;
-        on desktop the summary moves beside the items (D6 in FINDINGS).
+        viewport. On desktop the summary moves beside the items.
       */}
-      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className="mt-6 grid grid-cols-1 gap-8 sm:mt-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
         <section
           aria-labelledby="summary-heading"
-          className="lg:col-start-2 lg:row-start-1 lg:sticky lg:top-24 lg:self-start"
+          className="lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1 lg:self-start"
         >
           <h2 id="summary-heading" className="sr-only">
             Order summary
           </h2>
-          <div className="rounded-lg border border-border bg-surface-sunken p-4">
-            <p className="flex items-baseline justify-between gap-4">
-              <span className="text-sm text-ink-600">
-                Subtotal ({cart.itemCount} {cart.itemCount === 1 ? "item" : "items"})
-              </span>
-              <span className="text-xl font-bold">
-                {formatPrice(cart.subtotalCents)}
-              </span>
-            </p>
-            <p className="mt-1 text-xs text-ink-400">
-              Delivery and tax are calculated at checkout.
-            </p>
-            <Link
-              href="/checkout"
-              className="mt-4 block rounded-md bg-accent px-4 py-3 text-center text-sm font-semibold text-accent-ink hover:bg-accent-hover"
-            >
-              Proceed to checkout
-            </Link>
-            <Link
-              href="/"
-              className="mt-2 block px-4 py-2 text-center text-sm text-link underline underline-offset-2"
-            >
-              Keep shopping
-            </Link>
-          </div>
+          {/* The summary is the receipt (D36). Shipping and tax read `--`
+              until checkout knows the address (D11). */}
+          <Receipt className="lg:border-x lg:border-b lg:border-border">
+            <div className="space-y-2">
+              <ReceiptLine label={`Subtotal (${itemsLabel})`} value={formatPrice(cart.subtotalCents)} strong />
+              <ReceiptLine label="Shipping" value="--" />
+              <ReceiptLine label="Tax" value="--" note="Delivery and tax are calculated at checkout." />
+            </div>
+            <div className="mt-5 grid gap-2">
+              <Link href="/checkout" className={buttonClass()}>
+                Proceed to checkout
+              </Link>
+              <Link
+                href="/"
+                className={buttonClass({ variant: "quiet", className: "min-h-11 justify-self-center text-sm" })}
+              >
+                Keep shopping
+              </Link>
+            </div>
+          </Receipt>
         </section>
 
         <section aria-labelledby="items-heading" className="lg:col-start-1 lg:row-start-1">
           <h2 id="items-heading" className="sr-only">
             Items in your cart
           </h2>
-          <ul className="divide-y divide-border rounded-lg border border-border">
+          <ul className="border-t border-ink-900">
             {cart.lines.map((line) => (
-              <li key={line.itemId} className="flex gap-3 p-4 sm:gap-4">
+              <li key={line.itemId} className="flex gap-4 border-b border-border py-5">
                 <Link
                   href={`/product/${line.product.slug}`}
-                  className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-surface-sunken sm:h-24 sm:w-24"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  className="relative size-24 shrink-0 bg-well sm:size-28"
                 >
                   <Image
                     src={line.product.image}
                     alt=""
                     fill
-                    sizes="96px"
-                    className="object-contain p-1"
+                    sizes="112px"
+                    className="object-contain p-2"
                   />
                 </Link>
 
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <h3 className="text-sm font-medium leading-snug">
-                    <Link href={`/product/${line.product.slug}`} className="hover:underline">
-                      {line.product.title}
-                    </Link>
-                  </h3>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <CatalogueNo slug={line.product.slug} />
+                      <h3 className="text-[0.9375rem] leading-snug font-medium">
+                        <Link href={`/product/${line.product.slug}`} className="hover:underline hover:underline-offset-4">
+                          {line.product.title}
+                        </Link>
+                      </h3>
+                      {/* What was actually chosen, spelled out — not left implicit. */}
+                      {line.optionSummary ? (
+                        <p className="mt-0.5 text-sm text-ink-600">{line.optionSummary}</p>
+                      ) : null}
+                    </div>
 
-                  {/* What was actually chosen, spelled out — not left implicit. */}
-                  {line.optionSummary ? (
-                    <p className="text-sm text-ink-600">{line.optionSummary}</p>
-                  ) : null}
+                    <div className="shrink-0 text-right">
+                      <Price cents={line.lineTotalCents} className="text-[0.9375rem]" />
+                      {line.quantity > 1 ? (
+                        <p className="mt-0.5 font-mono text-xs text-ink-400">
+                          {formatPrice(line.priceCents)} each
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
 
                   {line.quantity >= line.stock ? (
-                    <p className="text-xs text-ink-400">
-                      Only {line.stock} in stock
-                    </p>
+                    <p className="mt-1 text-xs text-accent-hover">Only {line.stock} in stock</p>
                   ) : null}
 
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-3">
                     <QuantityStepper
                       itemId={line.itemId}
                       quantity={line.quantity}
                       stock={line.stock}
                       title={line.product.title}
                     />
-                    {/* At quantity 1 the stepper's trash icon already removes
-                        the line, so a second control would do the same job.
-                        Above 1 the minus only decrements, so Remove earns its
-                        place. */}
+                    {/* At quantity 1 the stepper's bin already removes the
+                        line, so a second control would do the same job. Above
+                        1 the minus only decrements, so Remove earns its place. */}
                     {line.quantity > 1 ? (
                       <form action={removeFromCartAction}>
                         <input type="hidden" name="itemId" value={line.itemId} />
                         <button
                           type="submit"
-                          className="text-sm text-link underline underline-offset-2"
+                          className="min-h-11 text-sm text-ink-600 underline decoration-border underline-offset-4 hover:text-ink-900 hover:decoration-ink-900"
                         >
                           Remove
                           <span className="sr-only"> {line.product.title}</span>
@@ -136,17 +148,6 @@ export default async function CartPage() {
                       </form>
                     ) : null}
                   </div>
-                </div>
-
-                <div className="shrink-0 text-right">
-                  <p className="text-sm font-semibold">
-                    {formatPrice(line.lineTotalCents)}
-                  </p>
-                  {line.quantity > 1 ? (
-                    <p className="mt-0.5 text-xs text-ink-400">
-                      {formatPrice(line.priceCents)} each
-                    </p>
-                  ) : null}
                 </div>
               </li>
             ))}

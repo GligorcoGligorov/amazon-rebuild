@@ -99,6 +99,7 @@ export function ProductCard({ product }: { product: Card }) {
                   inStock={product.inStock}
                   variant="secondary"
                   size="sm"
+                  slug={product.slug}
                 />
               </div>
             ) : null}

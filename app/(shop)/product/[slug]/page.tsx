@@ -202,6 +202,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
               variantId={selected.id}
               priceCents={selected.priceCents}
               inStock={inStock}
+              slug={product.slug}
             />
           </div>
 
@@ -230,6 +231,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
         priceCents={selected.priceCents}
         inStock={inStock}
         detail={choice || null}
+        slug={product.slug}
       />
     </div>
   );

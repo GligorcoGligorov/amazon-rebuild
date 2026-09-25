@@ -11,11 +11,13 @@ export function StickyBuyBar({
   priceCents,
   inStock,
   detail,
+  slug,
 }: {
   variantId: string;
   priceCents: number;
   inStock: boolean;
   detail: string | null;
+  slug: string;
 }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-900 bg-page lg:hidden">
@@ -25,7 +27,12 @@ export function StickyBuyBar({
           {detail ? <p className="mt-1 truncate text-xs text-ink-600">{detail}</p> : null}
         </div>
         <div className="ml-auto w-44 shrink-0">
-          <AddToCartButton variantId={variantId} priceCents={priceCents} inStock={inStock} />
+          <AddToCartButton
+            variantId={variantId}
+            priceCents={priceCents}
+            inStock={inStock}
+            slug={slug}
+          />
         </div>
       </div>
     </div>

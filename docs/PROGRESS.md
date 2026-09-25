@@ -18,7 +18,7 @@ The redesign ships page by page, deployed after each step:
 
 1. **R1 — Design system + home.** Done and deployed.
 2. **R2 — Product page.** Done and deployed.
-3. **R3 — Cart page + receipt drawer.**
+3. **R3 — Cart page + receipt drawer.** Done and deployed.
 4. **R4 — Checkout.**
 5. **R5 — Search, category, account (and orders, auth forms).**
 
@@ -127,9 +127,15 @@ The M1–M7 build (below) was complete and submitted before the brief changed.
   spec sheet (catalogue no., department, maker, options, SKU) under the
   description. The buying column sticks beside the gallery on desktop. The
   mobile buy bar now names the chosen options. D9's order is unchanged.
-- **Next: R3 — cart page + receipt drawer.** Then R4, R5. The cart, drawer,
-  checkout, search, category and account pages still have their M-era layouts
-  in the new palette.
+- **R3 — Cart page + receipt drawer. Done.** The add-to-cart drawer is a
+  receipt: torn top edge (bottom sheet on mobile, a receipt laid in a side
+  panel from 640px), catalogue number, dotted leaders, `--` for shipping and
+  tax, Checkout / View cart / Keep shopping, and a date stamp at the foot. It
+  is now portalled to `<body>` — see D39. The cart summary is the same
+  receipt, above the lines on mobile and sticky beside them on desktop. Lines
+  are ruled rows with a mono price; the stepper's bin is an SVG, 44px targets.
+- **Next: R4 — checkout.** Then R5. Checkout, search, category and account
+  pages still have their M-era layouts in the new palette.
 
 ## Known bugs
 
