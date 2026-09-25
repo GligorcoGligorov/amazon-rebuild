@@ -9,7 +9,7 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
 
 ## Current milestone
 
-**R — Redesign as Almanac (D36).** 8x changed the brief from an Amazon clone to
+**R — Redesign as Almanac (D36). Complete and deployed.** 8x changed the brief from an Amazon clone to
 an original storefront on the same backend. Only the frontend changes; the
 schema, queries, Server Actions, auth, cart, checkout and orders must keep
 working exactly as they do. Directions in `docs/DESIGN-DIRECTIONS.md`.
@@ -20,7 +20,9 @@ The redesign ships page by page, deployed after each step:
 2. **R2 — Product page.** Done and deployed.
 3. **R3 — Cart page + receipt drawer.** Done and deployed.
 4. **R4 — Checkout.** Done and deployed.
-5. **R5 — Search, category, account (and orders, auth forms).**
+5. **R5 — Search, category, account (and orders, auth forms).** Done and deployed.
+
+**The redesign is complete.**
 
 Before/after screenshots at both widths go in `research/redesign/` —
 `node research/redesign/capture.mjs <baseURL> <outDir> [pages]`. The *before*
@@ -142,8 +144,15 @@ The M1–M7 build (below) was complete and submitted before the brief changed.
   is the receipt, with `--` on its leaders until known (D11). Checkout chrome
   aligned to the page width. `research/redesign/capture-review.mjs` walks to
   the review step for the record (adds to the demo cart; re-seed after).
-- **Next: R5 — search, category, account, orders, auth forms.** These still
-  have their M-era layouts in the new palette.
+- **R5 — Search, category, account, orders, auth. Done.** Search facets
+  become a ruled index from 1024px (chips on mobile, D23 unchanged); category
+  pages carry their department number to match the home index; account is a
+  two-row index with counts; orders read like receipt headers; the order page
+  ends in a receipt; sign-in's demo credentials sit on a dashed ticket; 404
+  and error pages in display type. Fixed "Hi,Demo" (flex ate a space). One
+  test fix, documented as D40. `category-tile.tsx` deleted (unused).
+- **Nothing in progress.** Every page is on the Almanac system; the before and
+  after sets in `research/redesign/` cover all of them at both widths.
 
 ## Known bugs
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { buttonClass } from "@/components/ui/button";
 
 /**
  * Failing mid-checkout is the worst moment to lose someone, so this says
@@ -20,11 +21,11 @@ export default function CheckoutError({
   }, [error]);
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col items-start px-4 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">
+    <div className="mx-auto flex max-w-6xl flex-col items-start px-4 pt-10 sm:px-6 sm:pt-20">
+      <h1 className="max-w-2xl font-display text-5xl leading-none sm:text-6xl">
         Checkout could not continue
       </h1>
-      <p className="mt-3 text-ink-600">
+      <p className="mt-4 max-w-md text-ink-600">
         Nothing was charged and your cart is still intact. Try again, or go back
         to the cart and start the checkout afresh.
       </p>
@@ -33,20 +34,20 @@ export default function CheckoutError({
         <button
           type="button"
           onClick={reset}
-          className="rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
+          className={buttonClass({ variant: "ink" })}
         >
           Try again
         </button>
         <Link
           href="/cart"
-          className="rounded-md border border-border px-4 py-2.5 text-sm font-semibold hover:border-ink-400"
+          className={buttonClass({ variant: "secondary" })}
         >
           Back to cart
         </Link>
       </div>
 
       {error.digest ? (
-        <p className="mt-6 text-xs text-ink-400">
+        <p className="eyebrow mt-6">
           Reference <span className="font-mono">{error.digest}</span>
         </p>
       ) : null}

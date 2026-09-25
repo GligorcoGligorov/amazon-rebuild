@@ -105,6 +105,10 @@ The Almanac redesign touches only this layer. Tokens live in `app/globals.css`
 | `catalogue-no.tsx` | `No. 078`, read off the slug (D37) |
 | `receipt.tsx` | `Receipt` + `ReceiptLine` — torn edge, dotted leaders, `--` |
 | `wordmark.tsx` | The store name as set type |
+| `page-title.tsx` | Mono kicker + serif h1 — every page's header |
+
+Also shared: `components/account-breadcrumb.tsx` (account › orders › here).
+The drawer in `add-to-cart.tsx` renders through a portal (D39).
 
 `/design-system` renders all of it from the real components.
 

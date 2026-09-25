@@ -50,7 +50,9 @@ export async function SiteHeader() {
           >
             {session ? (
               <>
-                <span className="hidden sm:inline">Hi, </span>
+                {/* nbsp: this link is a flex container, and flex drops a
+                    plain trailing space, which rendered "Hi,Demo". */}
+                <span className="hidden sm:inline">Hi,&nbsp;</span>
                 {firstName ?? "Account"}
               </>
             ) : (

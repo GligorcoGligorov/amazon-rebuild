@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { signUpAction } from "@/lib/actions/auth";
 import { AuthForm } from "@/components/auth-form";
+import { PageTitle } from "@/components/ui/page-title";
 
 export const metadata: Metadata = { title: "Create account" };
 export const dynamic = "force-dynamic";
@@ -20,12 +21,12 @@ export default async function SignUpPage({ searchParams }: Props) {
   if (await auth()) redirect(callbackUrl);
 
   return (
-    <div className="mx-auto w-full max-w-sm px-4 py-10 sm:py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">Create account</h1>
-      <p className="mt-2 text-sm text-ink-600">
+    <div className="mx-auto w-full max-w-md px-4 pt-8 sm:pt-16">
+      <PageTitle eyebrow="New account">Create account</PageTitle>
+      <p className="mt-3 text-sm text-ink-600">
         Demo data only — do not use a real password.
       </p>
-      <div className="mt-6">
+      <div className="mt-8 border-t border-ink-900 pt-6">
         <AuthForm mode="sign-up" action={signUpAction} callbackUrl={callbackUrl} />
       </div>
     </div>

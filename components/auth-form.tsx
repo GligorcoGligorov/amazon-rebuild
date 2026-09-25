@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/demo-account";
 import type { AuthFormState } from "@/lib/actions/auth";
+import { buttonClass } from "./ui/button";
 
 type Props = {
   mode: "sign-in" | "sign-up";
@@ -29,7 +30,7 @@ export function AuthForm({ mode, action, callbackUrl }: Props) {
       {errorFor("form") ? (
         <p
           role="alert"
-          className="rounded-md border border-danger/40 bg-danger/5 px-3 py-2 text-sm text-danger"
+          className="rounded-md border border-danger px-3 py-2 text-sm text-danger"
         >
           {state.error}
         </p>
@@ -69,7 +70,7 @@ export function AuthForm({ mode, action, callbackUrl }: Props) {
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 rounded-md bg-accent px-4 py-3 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+        className={buttonClass({ variant: "ink", className: "mt-2" })}
       >
         {pending ? "…" : isSignUp ? "Create account" : "Sign in"}
       </button>
@@ -80,7 +81,7 @@ export function AuthForm({ mode, action, callbackUrl }: Props) {
         {isSignUp ? "Already have an account? " : "New here? "}
         <Link
           href={`${isSignUp ? "/sign-in" : "/sign-up"}?callbackUrl=${encodeURIComponent(callbackUrl)}`}
-          className="text-link underline underline-offset-2"
+          className="font-medium text-ink-900 underline decoration-border underline-offset-4 hover:decoration-ink-900"
         >
           {isSignUp ? "Sign in" : "Create an account"}
         </Link>
@@ -124,12 +125,12 @@ function Field({
         defaultValue={defaultValue}
         aria-invalid={error ? true : undefined}
         aria-describedby={[errorId, hintId].filter(Boolean).join(" ") || undefined}
-        className={`mt-1 w-full rounded-md border px-3 py-2 text-sm ${
-          error ? "border-danger" : "border-border"
+        className={`mt-1.5 h-11 w-full rounded-md border bg-surface px-3 text-[0.9375rem] focus:border-ink-900 ${
+          error ? "border-danger" : "border-rule-strong"
         }`}
       />
       {hint ? (
-        <p id={hintId} className="mt-1 text-xs text-ink-400">
+        <p id={hintId} className="mt-1.5 text-xs text-ink-600">
           {hint}
         </p>
       ) : null}
@@ -160,18 +161,17 @@ function DemoAccount() {
   }
 
   return (
-    <div className="rounded-md border border-border bg-surface-sunken p-3 text-sm">
-      <p className="font-medium">Just looking?</p>
-      <p className="mt-1 text-ink-600">
-        Use the demo account:{" "}
-        <span className="font-mono text-xs text-ink-900">{DEMO_EMAIL}</span>{" "}
-        /{" "}
-        <span className="font-mono text-xs text-ink-900">{DEMO_PASSWORD}</span>
+    // A ticket, not a banner: dashed edge, credentials in mono.
+    <div className="border border-dashed border-rule-strong bg-surface p-4 text-sm">
+      <p className="eyebrow text-ink-900">Just looking?</p>
+      <p className="mt-2 text-ink-600">Use the demo account:</p>
+      <p className="mt-1 font-mono text-[0.8125rem] break-all text-ink-900">
+        <span>{DEMO_EMAIL}</span> / <span>{DEMO_PASSWORD}</span>
       </p>
       <button
         type="button"
         onClick={fill}
-        className="mt-2 rounded-md border border-ink-900 px-3 py-1.5 text-sm font-semibold hover:bg-surface"
+        className={buttonClass({ variant: "secondary", size: "sm", className: "mt-3" })}
       >
         Use demo account
       </button>

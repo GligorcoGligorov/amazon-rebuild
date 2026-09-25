@@ -27,9 +27,9 @@ function hrefFor(base: Props, patch: Partial<Record<"q" | "category" | "sort", s
  * Component.
  *
  * At mobile widths each control is a single horizontally-scrolling row of
- * chips, so the first product stays near the top of the screen; on desktop the
- * categories become a vertical sidebar. This is the one thing Amazon's mobile
- * search gets right, and it needs no JavaScript.
+ * chips, so the first product stays near the top of the screen (D23); on
+ * desktop the categories become a ruled index down the side, the same shape as
+ * the home page's department list. No JavaScript.
  *
  * `<details>` was tried first and does not work here: Chromium does not render
  * a closed details element's children at all, so CSS cannot force it open at
@@ -37,9 +37,13 @@ function hrefFor(base: Props, patch: Partial<Record<"q" | "category" | "sort", s
  */
 
 const chipBase =
-  "inline-block shrink-0 rounded-md px-3 py-1.5 text-sm transition-colors";
-const chipOn = "bg-ink-900 font-semibold text-white";
-const chipOff = "border border-border hover:border-ink-400";
+  "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md px-3 text-sm transition-colors";
+const chipOn = "border border-ink-900 bg-ink-900 text-white";
+const chipOff = "border border-rule-strong bg-surface hover:border-ink-900";
+
+/** From 1024px a facet stops being a chip and becomes a ruled index row. */
+const facetRow =
+  "lg:flex lg:min-h-11 lg:w-full lg:justify-between lg:rounded-none lg:border-0 lg:border-b lg:border-border lg:bg-transparent lg:px-0";
 
 /** One row of chips: scrolls sideways on mobile, wraps or stacks on desktop. */
 const scroller =
@@ -58,28 +62,28 @@ export function AppliedFilters(props: Props) {
   if (chips.length === 0) return null;
 
   return (
-    // Amazon shows an applied filter only as a ticked checkbox in a long rail,
-    // with no summary of what is active. Ours shows removable chips (D10).
+    // Every active filter is stated and removable on its own.
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm text-ink-600">Filters:</span>
+      <span className="eyebrow">Filters:</span>
       <ul className="flex flex-wrap gap-2">
         {chips.map((chip) => (
           <li key={chip.label}>
             <Link
               href={chip.href}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-sunken py-1 pl-3 pr-2 text-sm hover:border-ink-400"
+              className="inline-flex min-h-10 items-center gap-2 rounded-md border border-ink-900 bg-surface pr-2.5 pl-3 text-sm hover:bg-ink-900 hover:text-white"
             >
               {chip.label}
-              <span aria-hidden="true" className="text-ink-400">
-                ×
-              </span>
+              <span aria-hidden="true">×</span>
               <span className="sr-only">— remove this filter</span>
             </Link>
           </li>
         ))}
       </ul>
       {chips.length > 1 ? (
-        <Link href="/search" className="text-sm text-link underline underline-offset-2">
+        <Link
+          href="/search"
+          className="inline-flex min-h-10 items-center text-sm underline decoration-border underline-offset-4 hover:decoration-ink-900"
+        >
           Clear all
         </Link>
       ) : null}
@@ -92,21 +96,18 @@ export function CategoryFacets(props: Props) {
 
   return (
     <nav aria-labelledby="facet-heading">
-      <h2
-        id="facet-heading"
-        className="mb-2 text-sm font-semibold text-ink-600 lg:text-ink-900"
-      >
+      <h2 id="facet-heading" className="eyebrow mb-2 lg:mb-0 lg:border-b lg:border-ink-900 lg:pb-3">
         Category
       </h2>
-      <ul className={`${scroller} lg:mx-0 lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0`}>
+      <ul className={`${scroller} lg:mx-0 lg:flex-col lg:gap-0 lg:overflow-visible lg:px-0`}>
         <li>
           <Link
             href={hrefFor(props, { category: "" })}
             aria-current={props.category === "" ? "true" : undefined}
-            className={`${chipBase} whitespace-nowrap lg:w-full ${
+            className={`${chipBase} whitespace-nowrap ${facetRow} ${
               props.category === ""
-                ? chipOn
-                : `${chipOff} lg:border-0 lg:hover:bg-surface-sunken`
+                ? `${chipOn} lg:font-medium lg:text-ink-900`
+                : `${chipOff} lg:hover:underline lg:hover:underline-offset-4`
             }`}
           >
             All categories
@@ -117,19 +118,26 @@ export function CategoryFacets(props: Props) {
             <Link
               href={hrefFor(props, { category: facet.slug })}
               aria-current={props.category === facet.slug ? "true" : undefined}
-              className={`${chipBase} whitespace-nowrap lg:w-full ${
+              className={`${chipBase} whitespace-nowrap ${facetRow} ${
                 props.category === facet.slug
-                  ? chipOn
-                  : `${chipOff} lg:border-0 lg:hover:bg-surface-sunken`
+                  ? `${chipOn} lg:font-medium lg:text-ink-900`
+                  : `${chipOff} lg:hover:underline lg:hover:underline-offset-4`
               }`}
             >
-              {facet.name}{" "}
+              <span>
+                {props.category === facet.slug ? (
+                  <span aria-hidden="true" className="mr-1.5 hidden lg:inline">
+                    →
+                  </span>
+                ) : null}
+                {facet.name}
+              </span>
               <span
-                className={
-                  props.category === facet.slug ? "text-white/70" : "text-ink-400"
-                }
+                className={`font-mono text-xs ${
+                  props.category === facet.slug ? "text-white/70 lg:text-ink-600" : "text-ink-400"
+                }`}
               >
-                ({facet.count})
+                {facet.count}
               </span>
             </Link>
           </li>
@@ -142,7 +150,7 @@ export function CategoryFacets(props: Props) {
 export function SortLinks(props: Props) {
   return (
     <div>
-      <h2 id="sort-label" className="mb-2 text-sm font-semibold text-ink-600">
+      <h2 id="sort-label" className="eyebrow mb-2">
         Sort
       </h2>
       <ul

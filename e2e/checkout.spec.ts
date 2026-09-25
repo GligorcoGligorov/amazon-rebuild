@@ -155,7 +155,9 @@ test.describe("checkout", () => {
 
     await expect(page).toHaveURL(/\/orders\/[0-9a-f-]+\?placed=1/);
     await expect(page.getByRole("heading", { name: /Order placed/ })).toBeVisible();
-    await expect(page.getByText(/8X-/)).toBeVisible();
+    // Scoped to main (D40): after the redirect, Next's screen-reader route
+    // announcer also carries the order number, via the page title.
+    await expect(page.getByRole("main").getByText(/8X-/)).toBeVisible();
     await expect(page.getByText(total)).toBeVisible();
 
     // The order is in history.

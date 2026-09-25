@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { searchProducts, isSortKey, type SortKey } from "@/lib/db/queries/search";
 import { getCategories } from "@/lib/db/queries/catalog";
 import { ProductCard } from "@/components/product-card";
+import { buttonClass } from "@/components/ui/button";
 import {
   AppliedFilters,
   CategoryFacets,
@@ -46,57 +47,55 @@ export default async function SearchPage({ searchParams }: Props) {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+    <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 sm:pt-10">
+      <p className="eyebrow">{q ? "Search" : categoryName ? "Department" : "The catalogue"}</p>
       {/* With a query the heading is the query; with only a category filter it
           is the category. "All products" is for the unfiltered page alone. */}
-      <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+      <h1 className="mt-2 font-display text-4xl leading-none break-words sm:text-6xl">
         {q ? <>Results for “{q}”</> : (categoryName ?? "All products")}
       </h1>
 
-      <p aria-live="polite" className="mt-1 text-sm text-ink-600">
+      <p aria-live="polite" className="mt-3 font-mono text-sm text-ink-600">
         {results.total} {results.total === 1 ? "product" : "products"}
         {q && categoryName ? <> in {categoryName}</> : null}
       </p>
 
-      <div className="mt-4 flex flex-col gap-4">
-        <AppliedFilters {...controls} />
+      <div className="mt-6 flex flex-col gap-4 border-t border-ink-900 pt-5 lg:flex-row lg:items-start lg:justify-between">
         <SortLinks {...controls} />
+        <AppliedFilters {...controls} />
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[13rem_1fr]">
+      <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <CategoryFacets {...controls} />
         </aside>
 
         <div>
           {results.items.length === 0 ? (
-            <div className="rounded-lg border border-border bg-surface-sunken p-8 text-center">
-              <p className="font-medium">
+            <div className="border-y border-border py-12">
+              <p className="font-display text-3xl leading-tight">
                 Nothing matched{q ? <> “{q}”</> : null}
                 {categoryName ? <> in {categoryName}</> : null}.
               </p>
               <p className="mt-2 text-sm text-ink-600">
                 Try a shorter search, or a different category.
               </p>
-              <div className="mt-4 flex flex-wrap justify-center gap-3">
+              <div className="mt-6 flex flex-wrap gap-3">
                 {category ? (
                   <Link
                     href={`/search${q ? `?q=${encodeURIComponent(q)}` : ""}`}
-                    className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
+                    className={buttonClass({ variant: "ink" })}
                   >
                     Search all categories
                   </Link>
                 ) : null}
-                <Link
-                  href="/"
-                  className="rounded-md border border-border px-4 py-2 text-sm font-semibold hover:border-ink-400"
-                >
+                <Link href="/" className={buttonClass({ variant: "secondary" })}>
                   Browse categories
                 </Link>
               </div>
             </div>
           ) : (
-            <ul className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-3 xl:grid-cols-4">
               {results.items.map((product) => (
                 <li key={product.id}>
                   <ProductCard product={product} />

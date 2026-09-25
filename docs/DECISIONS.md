@@ -977,3 +977,29 @@ any future sticky ancestor reintroduces it); removing the sticky column
 **Trade-offs:** None of substance. The drawer is only created after a click, so
 `document` always exists; focus trap and focus return are unchanged and the
 suite's focus specs pass as before.
+
+---
+
+## D40 — One checkout assertion is scoped to `main`; the test was ambiguous
+
+**What:** In the end-to-end order spec, `page.getByText(/8X-/)` became
+`page.getByRole("main").getByText(/8X-/)`.
+
+**Why:** This is a test fix, and the reason is stated here as CLAUDE.md
+requires. After an order is placed the app redirects to the order page, and
+Next's route announcer (a visually hidden `aria-live` region) reads out the new
+page title, `Order 8X-… · Almanac`. When the announcer fills in before the
+assertion runs, the locator matches two elements and strict mode fails the
+spec. It surfaced during R5 under parallel load; a single run passes. The same
+race existed before the redesign — the old title was `Order 8X-… · 8xstore` —
+it just had not been hit.
+
+The assertion's intent is "the order number is shown on the page". The
+announcer is correct product behaviour (it is what makes client navigation
+audible), so the product is not wrong; the locator was matching something the
+test never meant. Scoping to `main` says exactly what was meant, and weakens
+nothing: the number must still be visible in the page body.
+
+**Alternatives:** Dropping the number from the confirmation page's title
+(changes the product to suit a locator); retries (hides a deterministic
+ambiguity).

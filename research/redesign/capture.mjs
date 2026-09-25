@@ -2,7 +2,8 @@
  * Captures the store at 375px and 1280px for the redesign record (D36).
  *   node research/redesign/capture.mjs <baseURL> <outDir> [name,name,…]
  * The optional list limits which shots are taken (home, design-system,
- * category, search, product, drawer, cart, sign-in, checkout, account, orders).
+ * category, search, product, drawer, cart, sign-in, checkout, account, orders,
+ * order).
  * Signs in with the demo account for the checkout and account pages.
  */
 import { chromium } from "@playwright/test";
@@ -56,7 +57,7 @@ for (const [width, height, scale] of [[375, 812, 2], [1280, 800, 1]]) {
   }
   await visit("/cart", "cart");
   await visit("/sign-in", "sign-in");
-  if (["checkout", "account", "orders"].some(wanted)) try {
+  if (["checkout", "account", "orders", "order"].some(wanted)) try {
     await page.goto(base + "/sign-in", { waitUntil: "networkidle" });
     await page.getByLabel("Email").fill("demo@8xstore.dev");
     await page.getByLabel("Password").fill("demo1234");
@@ -68,6 +69,14 @@ for (const [width, height, scale] of [[375, 812, 2], [1280, 800, 1]]) {
   await visit("/checkout", "checkout");
   await visit("/account", "account");
   await visit("/orders", "orders");
+  if (wanted("order")) try {
+    await page.goto(base + "/orders", { waitUntil: "networkidle" });
+    await page.getByRole("link", { name: /^View order/ }).first().click();
+    await page.waitForURL(/\/orders\/[0-9a-f-]+/);
+    await shot("order");
+  } catch (e) {
+    console.log("FAILED order", width, e.message.split("\n")[0]);
+  }
   await ctx.close();
 }
 await browser.close();

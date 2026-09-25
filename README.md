@@ -29,15 +29,15 @@ after screenshots at both widths are in [`research/redesign/`](research/redesign
 
 ## The flow to try (about five minutes)
 
-1. **Home → a category tile → a product.** Try a shirt: change Size and Colour
-   and watch the price, stock and URL change. Out-of-stock options stay visible
-   and dotted rather than disappearing.
+1. **Home → a department → a product.** Try a shirt: change Size and Colour
+   and watch the price, stock and URL change. Sold-out options stay visible,
+   dashed and struck through, rather than disappearing.
 2. **Search for `watches`.** It finds them via the singular. Then try `apple`
    (matches a brand) and `laptops` (matches a category name — no product is
    titled that). Filter by category, sort by price; every control is in the URL,
    so back and refresh both work.
-3. **Add something to the cart.** The drawer opens over the page — you are not
-   taken anywhere. Both *View cart* and *Checkout* are offered at every width.
+3. **Add something to the cart.** A receipt opens over the page — you are not
+   taken anywhere. Both *Checkout* and *View cart* are offered at every width.
 4. **Open the cart on a phone-width window.** Subtotal and the checkout button
    sit *above* the line items. At quantity 1 the minus becomes a bin icon.
 5. **Check out.** Sign in with the demo account when the wall appears — you land
@@ -68,8 +68,9 @@ every point since M1.
 | **M5** | Auth | Credentials, guest-cart merge, demo account, the wall at checkout only. |
 | **M6** | Checkout + orders | Four-step accordion, order placement in a transaction. |
 | **M7** | Polish | 404, error boundaries, tap targets, this README. |
+| **R1–R5** | Redesign as Almanac | New brief: an original storefront on the same backend. Design system and home, then product, cart and receipt drawer, checkout, and search/category/account — each deployed on its own. Backend untouched; 157 specs still pass. See D36–D40. |
 
-`docs/PROGRESS.md` is the running handoff note. `docs/DECISIONS.md` has 34
+`docs/PROGRESS.md` is the running handoff note. `docs/DECISIONS.md` has 40
 numbered decisions with the reasoning and the trade-off for each.
 
 ---
