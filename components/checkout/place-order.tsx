@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { placeOrderAction, type PlaceOrderState } from "@/lib/actions/checkout";
 import { formatPrice } from "@/lib/format";
+import { buttonClass } from "@/components/ui/button";
 
 const initial: PlaceOrderState = {};
 
@@ -30,7 +31,7 @@ export function PlaceOrderButton({
       {state.error ? (
         <p
           role="alert"
-          className="rounded-md border border-danger/40 bg-danger/5 px-3 py-2 text-sm text-danger"
+          className="rounded-md border border-danger px-3 py-2 text-sm text-danger"
         >
           {state.error}
         </p>
@@ -39,12 +40,19 @@ export function PlaceOrderButton({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-accent px-6 py-3 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+        className={buttonClass({ className: "w-full" })}
       >
-        {pending ? "Placing order…" : `Place order — ${formatPrice(totalCents)}`}
+        {pending ? (
+          "Placing order…"
+        ) : (
+          // One span, so the button's flex gap does not double the space.
+          <span>
+            Place order — <span className="font-mono">{formatPrice(totalCents)}</span>
+          </span>
+        )}
       </button>
 
-      <p className="text-xs text-ink-400">
+      <p className="text-center text-xs text-ink-600">
         This is a demo. No payment is taken and nothing will be shipped.
       </p>
     </form>

@@ -3,8 +3,7 @@ import { Wordmark } from "@/components/ui/wordmark";
 
 /**
  * D11: checkout is a walled garden. No nav, no search, no cart badge — nothing
- * to click but finishing or deliberately leaving. Amazon strips its checkout
- * the same way and it is the single best-designed flow on their site.
+ * to click but finishing or deliberately leaving.
  */
 export default function CheckoutLayout({
   children,
@@ -19,7 +18,7 @@ export default function CheckoutLayout({
       </a>
 
       <header className="border-b border-border bg-page text-ink-900">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-2">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
           <Link href="/" className="inline-block py-2.5">
             <Wordmark />
           </Link>
@@ -31,8 +30,8 @@ export default function CheckoutLayout({
         {children}
       </main>
 
-      <footer className="border-t border-border bg-surface-sunken">
-        <div className="mx-auto max-w-5xl px-4 py-6 text-xs text-ink-600">
+      <footer className="mt-12 border-t border-ink-900 bg-page">
+        <div className="eyebrow mx-auto max-w-6xl px-4 py-6 sm:px-6">
           Demo store — no payment is taken and nothing is shipped.
         </div>
       </footer>

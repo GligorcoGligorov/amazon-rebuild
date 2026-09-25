@@ -1,10 +1,12 @@
 import { formatPrice } from "@/lib/format";
 import { TAX_RATE, type OrderTotals } from "@/lib/checkout";
+import { Receipt, ReceiptLine } from "@/components/ui/receipt";
 
 /**
- * D11: shipping and tax read `--` until they can actually be known. Amazon does
- * the same and it is the honest answer — a destination decides both, so a
- * number before that is a guess that will change.
+ * D11: shipping and tax read `--` until they can actually be known — a
+ * destination decides both, so a number before that is a guess that will
+ * change. Set as the receipt (D36), where `--` sits on a leader like a line
+ * still to be filled in.
  */
 export function OrderSummary({
   totals,
@@ -22,70 +24,49 @@ export function OrderSummary({
   const needsSpeed = totals.shippingCents === null;
 
   return (
-    <section
-      aria-labelledby="order-summary-heading"
-      className="rounded-lg border border-border bg-surface-sunken p-4"
-    >
-      <h2 id="order-summary-heading" className="text-sm font-semibold">
-        {heading}
-      </h2>
+    <section aria-labelledby="order-summary-heading">
+      <Receipt className="lg:border-x lg:border-b lg:border-border">
+        <h2 id="order-summary-heading" className="eyebrow text-ink-900">
+          {heading}
+        </h2>
 
-      <dl className="mt-3 flex flex-col gap-1.5 text-sm">
-        <Row
-          label={`Items (${itemCount})`}
-          value={formatPrice(totals.subtotalCents)}
-        />
-        <Row
-          label="Shipping & handling"
-          value={
-            totals.shippingCents === null
-              ? null
-              : totals.shippingCents === 0
-                ? "Free"
-                : formatPrice(totals.shippingCents)
-          }
-        />
-        <Row
-          label={`Estimated tax (${Math.round(TAX_RATE * 100)}%)`}
-          value={totals.taxCents === null ? null : formatPrice(totals.taxCents)}
-        />
-
-        <div className="mt-2 flex items-baseline justify-between gap-4 border-t border-border pt-3">
-          <dt className="font-semibold">Order total</dt>
-          <dd className="text-xl font-bold">{formatPrice(totals.totalCents)}</dd>
+        <div className="mt-4 space-y-2">
+          <ReceiptLine label={`Items (${itemCount})`} value={formatPrice(totals.subtotalCents)} />
+          <ReceiptLine
+            label="Shipping & handling"
+            value={
+              totals.shippingCents === null
+                ? unknown
+                : totals.shippingCents === 0
+                  ? "Free"
+                  : formatPrice(totals.shippingCents)
+            }
+          />
+          <ReceiptLine
+            label={`Estimated tax (${Math.round(TAX_RATE * 100)}%)`}
+            value={totals.taxCents === null ? unknown : formatPrice(totals.taxCents)}
+          />
         </div>
-      </dl>
 
-      {needsAddress ? (
-        <p className="mt-2 text-xs text-ink-400">
-          Shipping and tax are calculated once you enter a delivery address.
+        <div className="mt-4 border-t border-dashed border-rule-strong pt-4">
+          <ReceiptLine label="Order total" value={formatPrice(totals.totalCents)} strong />
+        </div>
+
+        <p className="mt-3 text-xs text-ink-600">
+          {needsAddress
+            ? "Shipping and tax are calculated once you enter a delivery address."
+            : needsSpeed
+              ? "Shipping is calculated once you choose a delivery speed."
+              : `Flat-rate delivery and a flat ${Math.round(TAX_RATE * 100)}% tax — this is a demo, not a real rate engine.`}
         </p>
-      ) : needsSpeed ? (
-        <p className="mt-2 text-xs text-ink-400">
-          Shipping is calculated once you choose a delivery speed.
-        </p>
-      ) : (
-        <p className="mt-2 text-xs text-ink-400">
-          Flat-rate delivery and a flat {Math.round(TAX_RATE * 100)}% tax — this is
-          a demo, not a real rate engine.
-        </p>
-      )}
+      </Receipt>
     </section>
   );
 }
 
-function Row({ label, value }: { label: string; value: string | null }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-ink-600">{label}</dt>
-      <dd className={value === null ? "text-ink-400" : undefined}>
-        {value ?? (
-          <>
-            <span aria-hidden="true">--</span>
-            <span className="sr-only">not known yet</span>
-          </>
-        )}
-      </dd>
-    </div>
-  );
-}
+const unknown = (
+  <>
+    <span aria-hidden="true">--</span>
+    <span className="sr-only">not known yet</span>
+  </>
+);

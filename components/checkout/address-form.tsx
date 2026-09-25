@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { saveAddressAction, type AddressFormState } from "@/lib/actions/checkout";
+import { buttonClass } from "@/components/ui/button";
 
 const initial: AddressFormState = {};
 
@@ -60,7 +61,7 @@ export function AddressForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-1 rounded-md bg-accent px-6 py-3 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60 sm:self-start"
+        className={buttonClass({ className: "mt-2 sm:self-start" })}
       >
         {pending ? "Saving…" : "Deliver to this address"}
       </button>
@@ -95,8 +96,8 @@ function Field({
         defaultValue={defaultValue}
         aria-invalid={error ? true : undefined}
         aria-describedby={errorId}
-        className={`mt-1 w-full rounded-md border px-3 py-2 text-sm ${
-          error ? "border-danger" : "border-border"
+        className={`mt-1.5 h-11 w-full rounded-md border bg-surface px-3 text-[0.9375rem] focus:border-ink-900 ${
+          error ? "border-danger" : "border-rule-strong"
         }`}
       />
       {error ? (

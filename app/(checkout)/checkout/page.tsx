@@ -11,6 +11,9 @@ import { OrderSummary } from "@/components/checkout/order-summary";
 import { AddressForm } from "@/components/checkout/address-form";
 import { PlaceOrderButton } from "@/components/checkout/place-order";
 import { formatPrice } from "@/lib/format";
+import { buttonClass } from "@/components/ui/button";
+import { CatalogueNo } from "@/components/ui/catalogue-no";
+import { Price } from "@/components/ui/price";
 import {
   DELIVERY_OPTIONS,
   DEMO_PAYMENT_LABEL,
@@ -82,18 +85,19 @@ export default async function CheckoutPage({ searchParams }: Props) {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
-      <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-        Secure checkout
-      </h1>
+    <div className="mx-auto max-w-6xl px-4 pt-6 pb-12 sm:px-6 sm:pt-10">
+      <p className="eyebrow">
+        Step {stepIndex(current) + 1} of 4 · {cart.itemCount} {cart.itemCount === 1 ? "item" : "items"}
+      </p>
+      <h1 className="mt-2 font-display text-5xl leading-none sm:text-6xl">Secure checkout</h1>
 
       {/* Summary first on mobile — the same reasoning as the cart. */}
-      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_19rem]">
-        <div className="lg:col-start-2 lg:row-start-1 lg:sticky lg:top-6 lg:self-start">
+      <div className="mt-6 grid grid-cols-1 gap-8 sm:mt-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
+        <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:self-start">
           <OrderSummary totals={totals} itemCount={cart.itemCount} />
         </div>
 
-        <div className="flex flex-col gap-3 lg:col-start-1 lg:row-start-1">
+        <div className="flex flex-col border-b border-border lg:col-start-1 lg:row-start-1">
           <CheckoutStepPanel
             step="address"
             index={0}
@@ -103,24 +107,21 @@ export default async function CheckoutPage({ searchParams }: Props) {
             summary={address ? `${address.fullName}, ${formatAddress(address)}` : null}
           >
             {saved.length > 0 ? (
-              <div className="mb-6">
-                <h3 className="text-sm font-medium">Use a saved address</h3>
-                <ul className="mt-2 flex flex-col gap-2">
+              <div className="mb-8">
+                <h3 className="eyebrow">Use a saved address</h3>
+                <ul className="mt-3 flex flex-col gap-2">
                   {saved.map((item) => (
                     <li key={item.id}>
-                      <Link
-                        href={`/checkout?step=delivery&address=${item.id}`}
-                        className="block rounded-md border border-border p-3 text-sm hover:border-ink-400"
-                      >
-                        <span className="font-medium">{item.fullName}</span>
-                        <span className="mt-0.5 block text-ink-600">
+                      <ChoiceRow href={`/checkout?step=delivery&address=${item.id}`}>
+                        <span className="block text-sm font-medium">{item.fullName}</span>
+                        <span className="mt-0.5 block text-sm text-ink-600">
                           {formatAddress(item)}
                         </span>
-                      </Link>
+                      </ChoiceRow>
                     </li>
                   ))}
                 </ul>
-                <p className="mt-4 text-sm font-medium">Or add a new one</p>
+                <p className="eyebrow mt-8">Or add a new one</p>
               </div>
             ) : null}
             <AddressForm />
@@ -145,22 +146,17 @@ export default async function CheckoutPage({ searchParams }: Props) {
                 if (address) q.set("address", address.id);
                 return (
                   <li key={option.id}>
-                    <Link
+                    <ChoiceRow
                       href={`/checkout?${q.toString()}`}
-                      className="flex items-start justify-between gap-4 rounded-md border border-border p-3 hover:border-ink-400"
+                      aside={cost === 0 ? "Free" : formatPrice(cost)}
                     >
-                      <span>
-                        <span className="block text-sm font-medium">
-                          {option.label} — arrives {deliveryEta(option.id)}
-                        </span>
-                        <span className="block text-sm text-ink-600">
-                          {option.description}
-                        </span>
+                      <span className="block text-sm font-medium">
+                        {option.label} — arrives {deliveryEta(option.id)}
                       </span>
-                      <span className="shrink-0 text-sm font-semibold">
-                        {cost === 0 ? "Free" : formatPrice(cost)}
+                      <span className="mt-0.5 block text-sm text-ink-600">
+                        {option.description}
                       </span>
-                    </Link>
+                    </ChoiceRow>
                   </li>
                 );
               })}
@@ -194,31 +190,32 @@ export default async function CheckoutPage({ searchParams }: Props) {
           >
             <ul className="flex flex-col gap-3">
               {cart.lines.map((line) => (
-                <li key={line.itemId} className="flex gap-3">
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-surface-sunken">
+                <li key={line.itemId} className="flex gap-4">
+                  <div className="relative size-16 shrink-0 bg-well">
                     <Image
                       src={line.product.image}
                       alt=""
                       fill
-                      sizes="56px"
-                      className="object-contain p-1"
+                      sizes="64px"
+                      className="object-contain p-1.5"
                     />
                   </div>
                   <div className="min-w-0 flex-1 text-sm">
+                    <CatalogueNo slug={line.product.slug} />
                     <p className="font-medium">{line.product.title}</p>
                     {line.optionSummary ? (
                       <p className="text-ink-600">{line.optionSummary}</p>
                     ) : null}
-                    <p className="text-ink-600">Quantity {line.quantity}</p>
+                    <p className="text-ink-600">
+                      Quantity <span className="font-mono">{line.quantity}</span>
+                    </p>
                   </div>
-                  <p className="shrink-0 text-sm font-semibold">
-                    {formatPrice(line.lineTotalCents)}
-                  </p>
+                  <Price cents={line.lineTotalCents} className="shrink-0 text-sm" />
                 </li>
               ))}
             </ul>
 
-            <div className="mt-6">
+            <div className="mt-6 border-t border-dashed border-rule-strong pt-6">
               {address && delivery ? (
                 <PlaceOrderButton
                   addressId={address.id}
@@ -231,12 +228,44 @@ export default async function CheckoutPage({ searchParams }: Props) {
         </div>
       </div>
 
-      <p className="mt-6 text-sm">
-        <Link href="/cart" className="text-link underline underline-offset-2">
-          Back to cart
+      <p className="mt-4">
+        <Link
+          href="/cart"
+          className={buttonClass({ variant: "quiet", className: "min-h-11 text-sm" })}
+        >
+          <span aria-hidden="true">←</span> Back to cart
         </Link>
       </p>
     </div>
+  );
+}
+
+/**
+ * One selectable row — a saved address, a delivery speed. Each is a link to
+ * the next step's URL, so choosing is navigating and the back button undoes
+ * it (D11). The empty ring says "pick one" without a form.
+ */
+function ChoiceRow({
+  href,
+  aside,
+  children,
+}: {
+  href: string;
+  aside?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-start gap-3 rounded-md border border-rule-strong bg-surface p-4 hover:border-ink-900"
+    >
+      <span
+        aria-hidden="true"
+        className="mt-0.5 size-4 shrink-0 rounded-full border border-ink-400 group-hover:border-[5px] group-hover:border-ink-900"
+      />
+      <span className="min-w-0 flex-1">{children}</span>
+      {aside ? <span className="shrink-0 font-mono text-sm">{aside}</span> : null}
+    </Link>
   );
 }
 
@@ -244,26 +273,28 @@ function PaymentStep({ href }: { href: string }) {
   return (
     <div>
       {/* We never collect card details, not even fake ones (D31). */}
-      <div className="rounded-md border-2 border-ink-900 p-3">
-        <p className="text-sm font-medium">{DEMO_PAYMENT_LABEL}</p>
-        <p className="mt-0.5 text-sm text-ink-600">
-          The only method in this demo. No card is charged.
-        </p>
+      <div className="flex items-start gap-3 rounded-md border border-ink-900 bg-surface p-4">
+        <span aria-hidden="true" className="mt-0.5 size-4 shrink-0 rounded-full border-[5px] border-ink-900" />
+        <span>
+          <span className="block text-sm font-medium">{DEMO_PAYMENT_LABEL}</span>
+          <span className="mt-0.5 block text-sm text-ink-600">
+            The only method in this demo. No card is charged.
+          </span>
+        </span>
       </div>
 
-      {/* Shown, not hidden, with its reason attached — the pattern Amazon uses
-          for an ineligible payment plan. */}
-      <div className="mt-2 rounded-md border border-dashed border-border p-3 opacity-60">
-        <p className="text-sm font-medium text-ink-400">Pay in instalments</p>
-        <p className="mt-0.5 text-sm text-ink-400">
-          Not available — this demo does not process real payments.
-        </p>
+      {/* Shown, not hidden, with its reason attached. */}
+      <div className="mt-2 flex items-start gap-3 rounded-md border border-dashed border-rule-strong p-4">
+        <span aria-hidden="true" className="mt-0.5 size-4 shrink-0 rounded-full border border-dashed border-ink-400" />
+        <span>
+          <span className="block text-sm font-medium text-ink-400 line-through">Pay in instalments</span>
+          <span className="mt-0.5 block text-sm text-ink-400">
+            Not available — this demo does not process real payments.
+          </span>
+        </span>
       </div>
 
-      <Link
-        href={href}
-        className="mt-4 inline-block rounded-md bg-accent px-6 py-3 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
-      >
+      <Link href={href} className={buttonClass({ className: "mt-5 w-full sm:w-auto" })}>
         Use this payment method
       </Link>
     </div>
@@ -272,17 +303,15 @@ function PaymentStep({ href }: { href: string }) {
 
 function EmptyCheckout() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Secure checkout</h1>
-      <p className="mt-2 text-ink-600">
-        There is nothing to check out — your cart is empty.
-      </p>
-      <Link
-        href="/"
-        className="mt-6 inline-block rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
-      >
-        Browse categories
-      </Link>
+    <div className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 sm:pt-14">
+      <p className="eyebrow">Checkout</p>
+      <h1 className="mt-2 font-display text-5xl leading-none sm:text-6xl">Secure checkout</h1>
+      <div className="mt-8 max-w-md border-t border-ink-900 pt-6">
+        <p className="text-ink-600">There is nothing to check out — your cart is empty.</p>
+        <Link href="/" className={buttonClass({ variant: "ink", className: "mt-6" })}>
+          Browse categories
+        </Link>
+      </div>
     </div>
   );
 }

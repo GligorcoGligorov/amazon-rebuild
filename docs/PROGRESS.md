@@ -19,7 +19,7 @@ The redesign ships page by page, deployed after each step:
 1. **R1 — Design system + home.** Done and deployed.
 2. **R2 — Product page.** Done and deployed.
 3. **R3 — Cart page + receipt drawer.** Done and deployed.
-4. **R4 — Checkout.**
+4. **R4 — Checkout.** Done and deployed.
 5. **R5 — Search, category, account (and orders, auth forms).**
 
 Before/after screenshots at both widths go in `research/redesign/` —
@@ -134,8 +134,16 @@ The M1–M7 build (below) was complete and submitted before the brief changed.
   is now portalled to `<body>` — see D39. The cart summary is the same
   receipt, above the lines on mobile and sticky beside them on desktop. Lines
   are ruled rows with a mono price; the stepper's bin is an SVG, 44px targets.
-- **Next: R4 — checkout.** Then R5. Checkout, search, category and account
-  pages still have their M-era layouts in the new palette.
+- **R4 — Checkout. Done.** Steps are ruled rows numbered `01`–`04` in mono
+  with serif headings; done steps show a moss tick, their one-line summary
+  and *Change*. Saved addresses and delivery speeds are one `ChoiceRow`
+  (a link with an empty ring, mono price). Payment shows the demo method
+  selected and instalments struck through with its reason. The order summary
+  is the receipt, with `--` on its leaders until known (D11). Checkout chrome
+  aligned to the page width. `research/redesign/capture-review.mjs` walks to
+  the review step for the record (adds to the demo cart; re-seed after).
+- **Next: R5 — search, category, account, orders, auth forms.** These still
+  have their M-era layouts in the new palette.
 
 ## Known bugs
 

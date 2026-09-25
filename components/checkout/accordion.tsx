@@ -34,28 +34,22 @@ export function CheckoutStepPanel({
     <section
       aria-labelledby={`step-${step}-heading`}
       aria-current={isOpen ? "step" : undefined}
-      className={`rounded-lg border p-4 sm:p-5 ${
-        isOpen ? "border-ink-900 bg-surface" : "border-border bg-surface"
-      }`}
+      className={`border-t py-5 ${isOpen ? "border-ink-900" : "border-border"}`}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <h2
           id={`step-${step}-heading`}
-          className={`flex items-baseline gap-2 text-base font-semibold ${
+          className={`flex items-baseline gap-3 font-display text-2xl leading-tight sm:text-[1.75rem] ${
             reached ? "" : "text-ink-400"
           }`}
         >
           <span
             aria-hidden="true"
-            className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-              isOpen
-                ? "bg-ink-900 text-white"
-                : isDone
-                  ? "bg-success text-white"
-                  : "bg-surface-sunken text-ink-400"
+            className={`w-6 shrink-0 font-mono text-xs ${
+              isDone ? "text-success" : isOpen ? "text-ink-900" : "text-ink-400"
             }`}
           >
-            {isDone ? "✓" : index + 1}
+            {isDone ? "✓" : String(index + 1).padStart(2, "0")}
           </span>
           {STEP_LABELS[step]}
         </h2>
@@ -63,7 +57,7 @@ export function CheckoutStepPanel({
         {isDone ? (
           <Link
             href={href}
-            className="shrink-0 text-sm text-link underline underline-offset-2"
+            className="flex min-h-11 shrink-0 items-center text-sm font-medium underline decoration-border underline-offset-4 hover:decoration-ink-900"
           >
             Change
             <span className="sr-only"> {STEP_LABELS[step].toLowerCase()}</span>
@@ -72,10 +66,10 @@ export function CheckoutStepPanel({
       </div>
 
       {isDone ? (
-        <p className="mt-2 pl-8 text-sm text-ink-600">{summary}</p>
+        <p className="mt-1 pl-9 text-sm text-ink-600">{summary}</p>
       ) : null}
 
-      {isOpen ? <div className="mt-4">{children}</div> : null}
+      {isOpen ? <div className="mt-5 sm:pl-9">{children}</div> : null}
     </section>
   );
 }
