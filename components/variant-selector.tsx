@@ -13,7 +13,7 @@ export type OptionState = {
  * Component, makes a chosen variant shareable, and makes the back button work —
  * which is the exit criterion for M2.
  *
- * Three states per value, following Amazon: selected, available, and
+ * Three states per value: selected, available, and
  * out-of-stock. Out-of-stock values are shown, never hidden, so the range stays
  * legible (see research/FINDINGS.md).
  */
@@ -79,9 +79,9 @@ export function VariantSelector({ options }: { options: OptionState[] }) {
         const current = option.values.find((v) => v.selected);
         return (
           <fieldset key={option.label}>
-            <legend className="mb-2 text-sm">
+            <legend className="mb-2.5 text-sm">
               <span className="text-ink-600">{option.label}: </span>
-              <span className="font-semibold">{current?.value ?? "—"}</span>
+              <span className="font-medium">{current?.value ?? "—"}</span>
             </legend>
 
             <ul className="flex flex-wrap gap-2">
@@ -92,14 +92,15 @@ export function VariantSelector({ options }: { options: OptionState[] }) {
                     scroll={false}
                     aria-current={value.selected ? "true" : undefined}
                     className={[
-                      "inline-flex min-w-11 items-center justify-center rounded-md px-3 py-2 text-sm transition-colors",
+                      "inline-flex min-h-11 min-w-12 items-center justify-center rounded-md border px-4 text-sm transition-colors",
                       value.selected
-                        ? "border-2 border-ink-900 bg-ink-900 font-semibold text-white"
+                        ? "border-ink-900 bg-ink-900 font-medium text-white"
                         : value.available
-                          ? "border-2 border-border bg-surface hover:border-ink-400"
-                          : // Shown, not hidden — dotted and muted, like Amazon's
-                            // unavailable sizes.
-                            "border-2 border-dashed border-border bg-surface text-ink-400",
+                          ? "border-rule-strong bg-surface hover:border-ink-900"
+                          : // Shown, not hidden: dashed and struck through, so
+                            // the range stays legible and the state is not
+                            // carried by colour alone (D16).
+                            "border-dashed border-rule-strong text-ink-400 line-through decoration-ink-400",
                     ].join(" ")}
                   >
                     {value.value}

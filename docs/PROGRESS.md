@@ -17,7 +17,7 @@ working exactly as they do. Directions in `docs/DESIGN-DIRECTIONS.md`.
 The redesign ships page by page, deployed after each step:
 
 1. **R1 — Design system + home.** Done and deployed.
-2. **R2 — Product page.**
+2. **R2 — Product page.** Done and deployed.
 3. **R3 — Cart page + receipt drawer.**
 4. **R4 — Checkout.**
 5. **R5 — Search, category, account (and orders, auth forms).**
@@ -121,9 +121,15 @@ The M1–M7 build (below) was complete and submitted before the brief changed.
   (with a *Design system* link), product card, and home: masthead with a
   product pick, department index, top rated, house rules. `/design-system`
   renders the system from the real components. 157 e2e tests pass.
-- **Next: R2 — product page.** Then R3–R5 in order. The product page, cart,
-  drawer, checkout, search, category and account pages still have their M-era
-  layouts in the new palette.
+- **R2 — Product page. Done.** Gallery on the neutral well with underlined
+  active thumbnail; serif title, mono price with save line; square option
+  chips (sold out dashed and struck through); stock with a status dot; a
+  spec sheet (catalogue no., department, maker, options, SKU) under the
+  description. The buying column sticks beside the gallery on desktop. The
+  mobile buy bar now names the chosen options. D9's order is unchanged.
+- **Next: R3 — cart page + receipt drawer.** Then R4, R5. The cart, drawer,
+  checkout, search, category and account pages still have their M-era layouts
+  in the new palette.
 
 ## Known bugs
 

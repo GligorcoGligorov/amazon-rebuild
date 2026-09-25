@@ -6,7 +6,8 @@ import { ProductGallery } from "@/components/product-gallery";
 import { VariantSelector, buildOptionStates } from "@/components/variant-selector";
 import { StickyBuyBar } from "@/components/sticky-buy-bar";
 import { AddToCartButton } from "@/components/add-to-cart";
-import { formatPrice, formatRating, optionParam } from "@/lib/format";
+import { catalogueNo, formatPrice, formatRating, optionParam } from "@/lib/format";
+import { Price } from "@/components/ui/price";
 import type { Variant } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
@@ -84,100 +85,116 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const lowStock = inStock && selected.stock <= 5;
   const discounted =
     selected.compareAtCents !== null && selected.compareAtCents > selected.priceCents;
+  const choice = [selected.option1Value, selected.option2Value].filter(Boolean).join(" · ");
+  const no = catalogueNo(product.slug);
+
+  const specs: [string, string][] = [
+    ...(no ? [["Catalogue", no] as [string, string]] : []),
+    ["Department", product.category.name],
+    ...(product.brand ? [["Maker", product.brand] as [string, string]] : []),
+    ...(product.option1Label
+      ? [["Options", [product.option1Label, product.option2Label].filter(Boolean).join(" · ")] as [string, string]]
+      : []),
+    ["SKU", selected.sku],
+  ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:py-8 lg:pb-10">
-      <nav aria-label="Breadcrumb" className="text-sm text-ink-600">
-        <ol className="flex flex-wrap items-center gap-1">
+    <div className="mx-auto max-w-7xl px-4 pt-5 pb-32 sm:px-6 sm:pt-8 lg:pb-12">
+      <nav aria-label="Breadcrumb" className="eyebrow">
+        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <li>
-            <Link href="/" className="hover:underline">
+            <Link href="/" className="inline-flex min-h-6 items-center hover:text-ink-900 hover:underline">
               Home
             </Link>
           </li>
-          <li aria-hidden="true">›</li>
+          <li aria-hidden="true">/</li>
           <li>
-            <Link href={`/category/${product.category.slug}`} className="hover:underline">
+            <Link
+              href={`/category/${product.category.slug}`}
+              className="inline-flex min-h-6 items-center hover:text-ink-900 hover:underline"
+            >
               {product.category.name}
             </Link>
           </li>
-          <li aria-hidden="true">›</li>
-          <li aria-current="page" className="font-medium text-ink-900">
-            {product.title}
+          <li aria-hidden="true">/</li>
+          {/* The page's own crumb is its catalogue number: the title is the
+              h1 directly below, and saying it twice wraps badly at 375px. */}
+          <li aria-current="page" className="text-ink-900">
+            {no ?? product.title}
+            {no ? <span className="sr-only"> — {product.title}</span> : null}
           </li>
         </ol>
       </nav>
 
       {/*
         Mobile DOM order is deliberate: summary (title + price) comes before the
-        gallery, so both are above the fold at 375px. Amazon buries the price
-        below a full-screen image and an ad — see D9. On desktop, explicit grid
-        placement puts the gallery back on the left without reordering the DOM.
+        gallery, so both are above the fold at 375px (D9). On desktop, explicit
+        grid placement puts the gallery back on the left without reordering the
+        DOM, and the buying column sticks beside it.
       */}
-      <div className="mt-4 grid grid-cols-1 gap-x-10 gap-y-6 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-y-6 sm:mt-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-16">
         <section
           aria-labelledby="product-title"
           className="lg:col-start-2 lg:row-start-1"
         >
-          {product.brand ? (
-            <p className="text-sm font-medium uppercase tracking-wide text-ink-400">
-              {product.brand}
-            </p>
-          ) : null}
+          <p className="flex items-center gap-2">
+            {no ? <span className="eyebrow text-ink-900">{no}</span> : null}
+            {product.brand ? <span className="eyebrow">{product.brand}</span> : null}
+            {rating ? (
+              <span className="ml-auto font-mono text-xs text-ink-600">
+                {rating}
+                <span aria-hidden="true">★</span>
+                <span className="sr-only"> out of 5 stars</span>
+              </span>
+            ) : null}
+          </p>
 
           <h1
             id="product-title"
-            className="mt-1 text-xl font-semibold leading-tight tracking-tight sm:text-2xl"
+            className="mt-2 font-display text-[2.5rem] leading-[1.02] tracking-[-0.01em] sm:text-5xl"
           >
             {product.title}
           </h1>
 
-          {rating ? (
-            <p className="mt-2 text-sm text-ink-600">
-              <span aria-hidden="true">★</span> {rating}
-              <span className="sr-only"> out of 5 stars</span>
-            </p>
-          ) : null}
-
-          <p className="mt-3 flex flex-wrap items-baseline gap-x-3">
-            <span className="text-2xl font-bold sm:text-3xl">
-              {formatPrice(selected.priceCents)}
-            </span>
+          <p className="mt-4 flex flex-wrap items-baseline gap-x-3">
+            <Price cents={selected.priceCents} className="text-[1.75rem] sm:text-3xl" />
             {discounted ? (
               <>
-                <span className="text-sm text-ink-400 line-through">
+                <span className="font-mono text-sm text-ink-400 line-through">
+                  <span className="sr-only">was </span>
                   {formatPrice(selected.compareAtCents!)}
                 </span>
-                <span className="text-sm font-semibold text-success">
-                  Save{" "}
-                  {formatPrice(selected.compareAtCents! - selected.priceCents)}
+                <span className="font-mono text-sm text-success">
+                  Save {formatPrice(selected.compareAtCents! - selected.priceCents)}
                 </span>
               </>
             ) : null}
           </p>
         </section>
 
-        <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
+        <div className="lg:col-start-1 lg:row-span-2 lg:row-start-1">
           <ProductGallery images={product.images} title={product.title} />
         </div>
 
         <section
           aria-label="Purchase options"
-          className="flex flex-col gap-6 lg:col-start-2 lg:row-start-2"
+          className="flex flex-col gap-6 lg:sticky lg:top-24 lg:col-start-2 lg:row-start-2 lg:self-start"
         >
           <VariantSelector options={options} />
 
-          <div>
-            <p
-              className={`text-sm font-semibold ${inStock ? "text-success" : "text-danger"}`}
-            >
+          <p className="flex items-center gap-2 text-sm font-medium">
+            <span
+              aria-hidden="true"
+              className={`size-2 rounded-full ${inStock ? (lowStock ? "bg-accent" : "bg-success") : "bg-danger"}`}
+            />
+            <span className={inStock ? (lowStock ? "text-accent-hover" : "text-success") : "text-danger"}>
               {inStock
                 ? lowStock
                   ? `Only ${selected.stock} left in stock`
                   : "In stock"
                 : "Out of stock"}
-            </p>
-            <p className="mt-1 text-xs text-ink-400">SKU {selected.sku}</p>
-          </div>
+            </span>
+          </p>
 
           {/* Desktop buy button. Mobile gets the sticky bar instead. */}
           <div className="hidden lg:block">
@@ -188,11 +205,22 @@ export default async function ProductPage({ params, searchParams }: Props) {
             />
           </div>
 
-          <div className="border-t border-border pt-6">
-            <h2 className="text-base font-semibold">About this item</h2>
-            <p className="mt-2 text-sm leading-relaxed text-ink-600">
+          <div className="border-t border-ink-900 pt-6">
+            <h2 className="font-display text-2xl leading-none">About this item</h2>
+            <p className="mt-3 max-w-prose text-[0.9375rem] leading-relaxed text-ink-800">
               {product.description}
             </p>
+
+            <dl className="mt-6 border-t border-border text-sm">
+              {specs.map(([term, detail]) => (
+                <div key={term} className="flex gap-4 border-b border-border py-2.5">
+                  <dt className="w-28 shrink-0 text-ink-600">{term}</dt>
+                  <dd className={term === "Catalogue" || term === "SKU" ? "min-w-0 font-mono text-[0.8125rem]" : ""}>
+                    {detail}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </section>
       </div>
@@ -201,6 +229,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
         variantId={selected.id}
         priceCents={selected.priceCents}
         inStock={inStock}
+        detail={choice || null}
       />
     </div>
   );

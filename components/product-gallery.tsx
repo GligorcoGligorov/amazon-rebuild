@@ -18,35 +18,37 @@ export function ProductGallery({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-surface-sunken">
+      <div className="relative aspect-square overflow-hidden bg-well">
         <Image
           src={images[active]}
           alt={`${title} — image ${active + 1} of ${images.length}`}
           fill
           priority
-          sizes="(max-width: 1024px) 100vw, 50vw"
-          className="object-contain p-4"
+          sizes="(max-width: 1024px) 100vw, 58vw"
+          className="object-contain p-[10%]"
         />
       </div>
 
       {images.length > 1 ? (
-        <ul className="flex gap-2 overflow-x-auto pb-1">
+        <ul className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-6 sm:overflow-visible">
           {images.map((src, i) => (
-            <li key={src} className="shrink-0">
+            <li key={src} className="shrink-0 sm:shrink">
               <button
                 type="button"
                 onClick={() => setActive(i)}
                 aria-pressed={i === active}
-                className={`relative block h-16 w-16 overflow-hidden rounded-md border-2 bg-surface-sunken transition-colors ${
-                  i === active ? "border-ink-900" : "border-border hover:border-ink-400"
+                className={`relative block size-16 overflow-hidden bg-well sm:size-auto sm:w-full sm:aspect-square ${
+                  i === active
+                    ? "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-ink-900"
+                    : "opacity-70 hover:opacity-100"
                 }`}
               >
                 <Image
                   src={src}
                   alt=""
                   fill
-                  sizes="64px"
-                  className="object-contain p-1"
+                  sizes="(max-width: 640px) 64px, 120px"
+                  className="object-contain p-1.5"
                 />
                 <span className="sr-only">Show image {i + 1}</span>
               </button>
