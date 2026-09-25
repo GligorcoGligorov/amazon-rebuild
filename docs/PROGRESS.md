@@ -3,13 +3,30 @@
 Handoff note. Rewritten at the end of every milestone. If you are a fresh
 session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
 
-**Last updated:** 2026-09-23
+**Last updated:** 2026-09-25
 
 ---
 
 ## Current milestone
 
-**M7 — Polish.** Done and deployed. **The build is complete and submitted.**
+**R — Redesign as Almanac (D36).** 8x changed the brief from an Amazon clone to
+an original storefront on the same backend. Only the frontend changes; the
+schema, queries, Server Actions, auth, cart, checkout and orders must keep
+working exactly as they do. Directions in `docs/DESIGN-DIRECTIONS.md`.
+
+The redesign ships page by page, deployed after each step:
+
+1. **R1 — Design system + home.** Done and deployed.
+2. **R2 — Product page.**
+3. **R3 — Cart page + receipt drawer.**
+4. **R4 — Checkout.**
+5. **R5 — Search, category, account (and orders, auth forms).**
+
+Before/after screenshots at both widths go in `research/redesign/` —
+`node research/redesign/capture.mjs <baseURL> <outDir> [pages]`. The *before*
+set was captured from production before R1 deployed.
+
+The M1–M7 build (below) was complete and submitted before the brief changed.
 
 **Live URL: https://8x-store.vercel.app** — keep this working at all times (D15).
 
@@ -97,7 +114,16 @@ session, this plus `CLAUDE.md` and `docs/DECISIONS.md` is everything you need.
 
 ## In progress
 
-Nothing. M7 is closed and the build is finished.
+- **R1 — Design system + home. Done.** Tokens re-pointed in `globals.css` (old
+  names kept, so un-redesigned pages already wear the new palette), three
+  fonts, primitives in `components/ui/` (`buttonClass`, `Price`,
+  `CatalogueNo`, `Receipt`/`ReceiptLine`, `Wordmark`). New header, footer
+  (with a *Design system* link), product card, and home: masthead with a
+  product pick, department index, top rated, house rules. `/design-system`
+  renders the system from the real components. 157 e2e tests pass.
+- **Next: R2 — product page.** Then R3–R5 in order. The product page, cart,
+  drawer, checkout, search, category and account pages still have their M-era
+  layouts in the new palette.
 
 ## Known bugs
 

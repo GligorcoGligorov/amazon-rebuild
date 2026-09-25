@@ -1,29 +1,77 @@
 @import "tailwindcss";
 
-/* Design tokens. Everything downstream references these, not raw hex. */
+/*
+ * Almanac design tokens (D36). A modern store inspired by print: one neutral
+ * page, hairline rules instead of boxes and shadows, near-square corners, and a
+ * single clay accent reserved for buying.
+ *
+ * The pre-redesign token names (ink-*, surface*, border, accent*, link, …) are
+ * kept and re-pointed, so every page picks up the new identity at once and a
+ * half-redesigned tree never looks broken.
+ */
 @theme {
-  /* Ink — near-black, warmer than pure black so large fills don't glare. */
-  --color-ink-900: oklch(0.21 0.02 260);
-  --color-ink-800: oklch(0.28 0.02 260);
-  --color-ink-600: oklch(0.46 0.015 260);
-  --color-ink-400: oklch(0.65 0.012 260);
+  /* Type. Serif for display only; sans for reading and UI; mono for every
+     number a shopper compares — prices, totals, counts, order and catalogue
+     numbers. */
+  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 
-  /* Surfaces */
-  --color-surface: oklch(1 0 0);
-  --color-surface-sunken: oklch(0.975 0.003 260);
-  --color-border: oklch(0.9 0.005 260);
+  /* Ink. Contrast on page: 17.6 / 13.2 / 6.5 / 5.0 : 1. */
+  --color-ink-900: #141413;
+  --color-ink-800: #2e2d2a;
+  --color-ink-600: #5c5b57;
+  --color-ink-400: #6a6863;
 
-  /* Accent — the buy colour. Warm, high-contrast against ink. */
-  --color-accent: oklch(0.79 0.16 78);
-  --color-accent-hover: oklch(0.74 0.16 78);
-  --color-accent-ink: oklch(0.21 0.02 260);
+  /* Surfaces. `well` is the one neutral every product photo sits on, whatever
+     the category — the dummyjson shots are transparent cut-outs. */
+  --color-page: #fafaf8;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f3f2ef;
+  --color-well: #f0efeb;
 
-  /* Link / focus */
-  --color-link: oklch(0.52 0.15 250);
+  /* Rules. `border` is the hairline; `rule-strong` frames inputs. */
+  --color-border: #e3e1dc;
+  --color-rule-strong: #c9c6bf;
 
-  /* Status */
-  --color-success: oklch(0.55 0.13 150);
-  --color-danger: oklch(0.55 0.19 25);
+  /* Clay — the buy colour, and nothing else. White on it 5.1:1. */
+  --color-accent: #c4411b;
+  --color-accent-hover: #a3351a;
+  --color-accent-ink: #ffffff;
+
+  /* Links and focus use the darker clay: 6.5:1 on page. */
+  --color-link: #a3351a;
+
+  /* Status. Danger is a crimson, kept apart from clay so "buy" never reads as
+     "error". */
+  --color-success: #2f6a3e;
+  --color-danger: #a61b29;
+
+  /* Near-square corners everywhere. Pills (`rounded-full`) are untouched. */
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+}
+
+/* Small caps label in mono: section kickers, catalogue numbers, meta. */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-600);
+}
+
+/* The receipt's torn edge: a row of teeth pointing up, drawn in the surface
+   colour. Put it on an empty `h-2` element directly above the receipt body. */
+@utility perforation {
+  background:
+    linear-gradient(-45deg, var(--color-surface) 5px, transparent 0) 0 100% / 10px 10px repeat-x,
+    linear-gradient(45deg, var(--color-surface) 5px, transparent 0) 0 100% / 10px 10px repeat-x;
 }
 
 html {
@@ -31,7 +79,7 @@ html {
 }
 
 body {
-  background: var(--color-surface);
+  background: var(--color-page);
   color: var(--color-ink-900);
 }
 

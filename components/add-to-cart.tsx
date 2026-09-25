@@ -10,12 +10,16 @@ import {
   type CartActionResult,
 } from "@/lib/actions/cart";
 import { formatPrice } from "@/lib/format";
+import { buttonClass } from "./ui/button";
 
 type Props = {
   variantId: string;
   priceCents: number;
   inStock: boolean;
   label?: string;
+  /** The grid uses a quieter outline button; clay is for the product page. */
+  variant?: "primary" | "secondary";
+  size?: "md" | "sm";
   className?: string;
 };
 
@@ -33,6 +37,8 @@ export function AddToCartButton({
   priceCents,
   inStock,
   label = "Add to cart",
+  variant = "primary",
+  size = "md",
   className = "",
 }: Props) {
   const [pending, startTransition] = useTransition();
@@ -86,7 +92,7 @@ export function AddToCartButton({
           ref={buttonRef}
           type="submit"
           disabled={!inStock || pending}
-          className={`w-full rounded-md bg-accent px-6 py-3 text-sm font-semibold text-accent-ink transition-opacity hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+          className={buttonClass({ variant, size, className: `w-full ${className}` })}
         >
           {!inStock ? "Out of stock" : pending ? "Adding…" : label}
         </button>

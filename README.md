@@ -1,7 +1,11 @@
-# 8xstore
+# Almanac
 
-A rebuild of the core Amazon shopping experience — browse, search, product,
-cart, checkout, orders — built in a 24-hour window for an 8x assignment.
+An online store — browse, search, product, cart, checkout, orders — built for
+an 8x assignment. It began as a rebuild of the core Amazon shopping experience;
+8x then changed the brief to an original storefront on the same backend, so the
+frontend was redesigned as **Almanac**, a modern store inspired by print
+catalogues. The database, Server Actions, auth, cart, checkout and orders did
+not change.
 
 **Live: https://8x-store.vercel.app**
 
@@ -13,6 +17,13 @@ address, so the account pages are not empty when you arrive.
 > Nothing here takes money. There is no payment SDK, no card field anywhere in
 > the app, and no processor keys. "Demo card ending 4242" is a hardcoded string.
 > See [D31](docs/DECISIONS.md) for why there is deliberately no card form.
+
+**Design system: https://8x-store.vercel.app/design-system** — the tokens,
+type, numbers, controls, product card and receipt, rendered from the real
+components (also linked in the footer). The three directions considered and
+the reasoning for the choice are in
+[`docs/DESIGN-DIRECTIONS.md`](docs/DESIGN-DIRECTIONS.md) and D36; before and
+after screenshots at both widths are in [`research/redesign/`](research/redesign/).
 
 ---
 

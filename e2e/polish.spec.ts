@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
 
+/*
+ * The store was renamed from 8xstore to Almanac when 8x changed the brief from
+ * an Amazon clone to an original storefront (D36). The name assertions below
+ * follow the brand; what they check — the logo link exists, is focusable, is
+ * tappable, and page titles carry the store name — is unchanged.
+ */
 const PAGES = [
   ["/", "home"],
   ["/search?q=watch", "search"],
@@ -27,7 +33,7 @@ test.describe("polish pass", () => {
       await page.goto(path);
       const title = await page.title();
       expect(title, `${label} needs a real title`).not.toBe("");
-      expect(title, `${label} title must be specific`).toMatch(/8xstore/);
+      expect(title, `${label} title must be specific`).toMatch(/Almanac/);
     }
   });
 
@@ -55,7 +61,7 @@ test.describe("polish pass", () => {
     await page.goto("/");
 
     // They were 28px before this pass. A thumb wants 44.
-    for (const name of [/8xstore/, /Sign in/, /items in cart/]) {
+    for (const name of [/Almanac/, /Sign in/, /items in cart/]) {
       const box = await page.getByRole("link", { name }).first().boundingBox();
       expect(box!.height, `${name} tap target`).toBeGreaterThanOrEqual(40);
     }
@@ -63,7 +69,7 @@ test.describe("polish pass", () => {
 
   test("focused controls show a visible ring", async ({ page }) => {
     await page.goto("/");
-    const link = page.getByRole("link", { name: "8xstore" });
+    const link = page.getByRole("link", { name: "Almanac" });
     await link.focus();
 
     const outline = await link.evaluate((el) => {

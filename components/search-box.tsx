@@ -26,22 +26,35 @@ export function SearchForm({ defaultQuery = "" }: { defaultQuery?: string }) {
       action="/search"
       method="get"
       role="search"
-      className="order-last flex w-full gap-2 sm:order-none sm:w-auto sm:flex-1"
+      className="order-last flex w-full sm:order-none sm:w-auto sm:max-w-xl sm:flex-1"
     >
       <label htmlFor="site-search" className="sr-only">
         Search products
       </label>
-      <input
-        id="site-search"
-        name="q"
-        type="search"
-        defaultValue={defaultQuery}
-        placeholder="Search products"
-        className="min-w-0 flex-1 rounded-md border border-transparent bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400"
-      />
+      <div className="relative min-w-0 flex-1">
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 20 20"
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-600"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+        >
+          <circle cx="8.5" cy="8.5" r="5.75" />
+          <path d="m13 13 4.25 4.25" strokeLinecap="round" />
+        </svg>
+        <input
+          id="site-search"
+          name="q"
+          type="search"
+          defaultValue={defaultQuery}
+          placeholder="Search goods and brands"
+          className="h-11 w-full rounded-l-md border border-r-0 border-rule-strong bg-surface pr-3 pl-9 text-[0.9375rem] text-ink-900 placeholder:text-ink-400 focus:border-ink-900"
+        />
+      </div>
       <button
         type="submit"
-        className="shrink-0 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
+        className="h-11 shrink-0 rounded-r-md bg-ink-900 px-4 text-sm font-medium text-white hover:bg-ink-800"
       >
         Search
       </button>

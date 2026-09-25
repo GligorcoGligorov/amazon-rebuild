@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Wordmark } from "@/components/ui/wordmark";
 
 /**
  * D11: checkout is a walled garden. No nav, no search, no cart badge — nothing
@@ -17,14 +18,12 @@ export default function CheckoutLayout({
         Skip to main content
       </a>
 
-      <header className="border-b border-border bg-ink-900 text-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/" className="text-lg font-semibold tracking-tight">
-            8x<span className="text-accent">store</span>
+      <header className="border-b border-border bg-page text-ink-900">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-2">
+          <Link href="/" className="inline-block py-2.5">
+            <Wordmark />
           </Link>
-          <p className="text-sm text-white/70">
-            <span aria-hidden="true">🔒</span> Secure checkout
-          </p>
+          <p className="eyebrow">Secure checkout</p>
         </div>
       </header>
 

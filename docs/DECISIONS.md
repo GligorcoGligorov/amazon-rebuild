@@ -861,3 +861,96 @@ inside a sentence looks wrong, and M7 was scoped to real issues, not redesigns.
 
 **With more time:** The same audit as an automated check in CI, rather than a
 script run once.
+
+---
+
+## D36 — The frontend is redesigned as Almanac; the backend is untouched
+
+**What:** 8x changed the brief from an Amazon clone to an original storefront
+on the same backend. Three directions were proposed
+(`docs/DESIGN-DIRECTIONS.md`); **Almanac** was chosen, with four amendments
+from review: no schema change, modern rather than vintage, mono figures
+borrowed from the Tally direction, and one neutral photo well across every
+category. The system:
+
+- **Type:** Instrument Serif for display only, Instrument Sans for reading and
+  UI, Geist Mono for every number a shopper compares (prices, totals, counts,
+  catalogue and order numbers, `--`). Fraunces, proposed in the direction doc,
+  was swapped for Instrument Serif because it reads 1970s; the brief said
+  modern.
+- **Colour:** neutral page `#FAFAF8`, ink `#141413`, one clay accent `#C4411B`
+  reserved for buying, crimson kept apart from clay for errors. Every text pair
+  passes AA; ratios are computed live on `/design-system`.
+- **Structure:** hairline rules instead of boxes and shadows, 2px corners, no
+  drop shadows anywhere.
+- **Photos:** the dummyjson shots are transparent 1000×1000 cut-outs, so every
+  product sits on the same `well` colour with no blend-mode tricks.
+- **Signature:** the catalogue number (D37) and the receipt — torn edge, dotted
+  leaders, `--` on a leader — for the drawer and every total.
+
+The pre-redesign token names (`ink-*`, `surface*`, `accent*`, …) were kept and
+re-pointed, so every page adopted the new identity at once and no intermediate
+deploy looked broken while pages were redesigned one at a time.
+
+Every deliberate UX pattern survives with a new look: drawer not interstitial
+(D8), title and price first on mobile (D9), cart summary on top on mobile,
+checkout accordion with `--` (D11), no sponsored rows (D10).
+
+**Tests changed, and why:** five assertions on the name `8xstore` now assert
+`Almanac`, because the brand changed — what they check is unchanged. All other
+copy the suite depends on ("Shop by category", "Top rated", "See options",
+"Add to cart") was kept, so no other spec needed to move.
+
+**Alternatives:** Tally (monochrome spec-sheet; cheapest, but reads generic) and
+Ripe (colour-coded pastels; most QA surface, risks looking toy-like).
+
+**Trade-offs:** A serif-led identity is less obviously "tech store" for laptops
+and phones; mitigated by keeping product titles in the sans and numbers in mono.
+
+**With more time:** A dark theme from the same tokens, and an automated axe
+pass so the contrast claims are enforced rather than displayed.
+
+---
+
+## D37 — The catalogue number is read off the slug, not stored
+
+**What:** Every product shows a number like `No. 078`. It is the dummyjson id
+already at the end of every slug (`apple-macbook-pro-14-inch-space-grey-78`),
+zero-padded, derived by `catalogueNo()` in `lib/format.ts` at render time.
+
+**Why:** The brief said the backend stays untouched. The id is unique, fixed by
+the seed, and already in every row the UI reads — a stable number with no
+migration and no query change.
+
+**Alternatives:** A `catalogue_no` column (a schema change, ruled out); numbering
+by sort order at render (shifts whenever the catalogue changes).
+
+**Trade-offs:** Numbers have gaps (the catalogue is 84 of dummyjson's 194) and
+depend on a slug convention. A slug without the suffix renders no number rather
+than a wrong one.
+
+**With more time:** A real column, if the catalogue ever stops coming from one
+seed source.
+
+---
+
+## D38 — The first screen always has a product; cards end in one aligned row
+
+**What:** The home masthead carries one product — the best-rated item that is
+in stock and has options — beside the headline on desktop and under the buttons
+on mobile. Product cards reserve two title lines and end in the same price row
+and one 40px action for every state: *Add to cart*, *See options →* (styled as
+a button), or a dashed *Out of stock*. The rating moved up to the meta row so a
+sale price never wraps at 375px.
+
+**Why:** Review of the first redesign pass: a text-only first screen at 1280px
+gave a shopper nothing to buy, and cards whose footers differed by state made
+grid rows ragged. The pick rule skips the literal top-rated item because that is
+an Amazon Echo, the wrong first impression for a store built not to look like
+Amazon, and a product with options shows per-option pricing (D7) at a glance.
+
+*See options* is not a second link: it sits under the card's stretched title
+link, so it is clickable while each card stays one tab stop.
+
+**Trade-offs:** The shelf below skips the pick to avoid showing it twice, so
+"Top rated" starts from the second-best in-stock product with options.

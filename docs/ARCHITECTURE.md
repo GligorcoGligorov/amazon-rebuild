@@ -92,6 +92,22 @@ docs/                     these documents
 .agent-logs/              captured prompts + responses (part of the submission)
 ```
 
+## Presentation layer (D36)
+
+The Almanac redesign touches only this layer. Tokens live in `app/globals.css`
+(`@theme`), fonts in `app/layout.tsx`. Shared primitives are in
+`components/ui/`:
+
+| File | What |
+|---|---|
+| `button.tsx` | `buttonClass()` — one look for `<button>`, `<Link>` and form submits |
+| `price.tsx` | `Price` — every price, in mono; `from` and sale price |
+| `catalogue-no.tsx` | `No. 078`, read off the slug (D37) |
+| `receipt.tsx` | `Receipt` + `ReceiptLine` — torn edge, dotted leaders, `--` |
+| `wordmark.tsx` | The store name as set type |
+
+`/design-system` renders all of it from the real components.
+
 ## Key flows
 
 _(planned — each milestone fills in the flow it shipped: the route, the

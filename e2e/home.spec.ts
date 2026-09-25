@@ -13,6 +13,13 @@ import { test, expect } from "@playwright/test";
  * Everything else — shell, tokens, overflow, keyboard, cart link — is kept.
  */
 
+/*
+ * The store was renamed from 8xstore to Almanac when 8x changed the brief from
+ * an Amazon clone to an original storefront (D36). The name assertions below
+ * follow the brand; what they check — the logo link exists, is focusable, is
+ * tappable, and page titles carry the store name — is unchanged.
+ */
+
 test.describe("home page", () => {
   test("renders categories read from the database", async ({ page }) => {
     await page.goto("/");
@@ -35,7 +42,7 @@ test.describe("home page", () => {
     await page.goto("/");
 
     await expect(page.getByRole("banner")).toBeVisible();
-    await expect(page.getByRole("link", { name: "8xstore" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Almanac" })).toBeVisible();
     await expect(page.getByRole("contentinfo")).toBeVisible();
 
     // Amazon serves a 1000px-wide desktop page into a 375px viewport. Ours
@@ -92,7 +99,7 @@ test.describe("home page", () => {
     await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
 
     await page.keyboard.press("Tab");
-    await expect(page.getByRole("link", { name: "8xstore" })).toBeFocused();
+    await expect(page.getByRole("link", { name: "Almanac" })).toBeFocused();
 
     // M3 made the search box real, so it is now in the tab order between the
     // logo and the cart — it was a disabled shell that focus skipped before.
